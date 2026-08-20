@@ -272,6 +272,10 @@ class Estimator:
         #: kept current for those still inside it.
         self.keyframe_poses: dict = {}
         self.keyframe_stamps: dict = {}
+        #: Every landmark's final position, recorded as it leaves the window.
+        #: The window itself holds at most ``max_landmarks``; this is the map
+        #: the run actually built, and it is what gets written out.
+        self.map_points: dict = {}
 
     # -- public -----------------------------------------------------------
     @property
@@ -331,13 +335,31 @@ class Estimator:
             [self.keyframe_poses[k] for k in ids],
         )
 
-    def landmark_cloud(self) -> np.ndarray:
-        pts = [
-            self.values.vector(f"l{k}")
+    def landmark_cloud(self, whole_map: bool = False) -> np.ndarray:
+        """Landmarks as an ``(N, 3)`` array.
+
+        By default the window's current landmarks.  With ``whole_map`` the
+        accumulated map: every landmark's position as it was when it left the
+        window, plus the ones still in it.  The window holds at most
+        ``max_landmarks`` at a time, so the two differ by two orders of
+        magnitude on a full sequence.
+
+        The map is a by-product rather than a maintained structure: points that
+        left the window are never revisited, so a loop closure corrects the
+        trajectory and not them.  That is stated in ``docs/limitations.md`` too.
+        """
+        current = {
+            k: self.values.vector(f"l{k}")
             for k in self.landmarks
             if f"l{k}" in self.values
-        ]
-        return np.stack(pts) if pts else np.zeros((0, 3))
+        }
+        if not whole_map:
+            return np.stack(list(current.values())) if current else np.zeros((0, 3))
+        combined = dict(self.map_points)
+        combined.update(current)
+        return (
+            np.stack(list(combined.values())) if combined else np.zeros((0, 3))
+        )
 
     # -- keyframe policy ---------------------------------------------------
     def _is_keyframe(self, feats) -> bool:
@@ -917,6 +939,9 @@ class Estimator:
             self._prior = None
 
         for key in drop:
+            if key.startswith("l") and key in self.values:
+                # Its position now is its final one, so keep it for the map.
+                self.map_points[int(key[1:])] = self.values.vector(key).copy()
             self.values.pop(key, None)
             if key.startswith("l"):
                 self.landmarks.pop(int(key[1:]), None)

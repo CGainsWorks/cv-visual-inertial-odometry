@@ -20,9 +20,10 @@ logged, and the commit it was produced from.
 
 ## What is not here
 
-**The trajectories themselves.** A `.tum` file for one sequence is a few
-hundred kilobytes and its ground-truth companion is a few megabytes; the whole
-set is about 24 MB of text that two commands regenerate. Committing it would
+**The trajectories and the maps.** A `.tum` file for one sequence is a few
+hundred kilobytes, its ground-truth companion is a few megabytes, and the
+sparse map beside it is another few hundred kilobytes; the whole set is about
+24 MB of text that two commands regenerate. Committing it would
 make a clone heavier than the code by an order of magnitude for no information
 a reader cannot produce.
 

@@ -5,6 +5,7 @@ This is the script every number in the README comes from.  It writes:
 
 * ``<out>/<sequence>_<mode>.tum``      the estimated trajectory
 * ``<out>/<sequence>_gt.tum``          ground truth on the same clock
+* ``<out>/<sequence>_<mode>_map.ply``  the sparse landmark map
 * ``<out>/<sequence>_<mode>.json``     metrics, timing, configuration and the
                                        exact commit the run was made from
 
@@ -34,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from vio.evaluation.metrics import ate, drift_rate, rpe  # noqa: E402
 from vio.frontend.tracker import TrackerConfig  # noqa: E402
 from vio.io import euroc  # noqa: E402
+from vio.io.pointcloud import write_ply  # noqa: E402
 from vio.io.trajectory import read_tum, write_tum  # noqa: E402
 from vio.pipeline.estimator import Estimator, EstimatorConfig  # noqa: E402
 
@@ -153,6 +155,14 @@ def main() -> int:
     write_tum(out_dir / f"{name}_gt.tum", gt_times, gt_poses, origin_ns,
               comment=f"{name} ground truth")
 
+    # The sparse map the run built.  The window holds at most max_landmarks at
+    # once; this is every landmark's position as it left the window.
+    cloud = est.landmark_cloud(whole_map=True)
+    map_path = write_ply(
+        out_dir / f"{tag}_map.ply", cloud,
+        note=f"{name} {args.mode}, {len(cloud)} landmarks, commit {git_commit()}",
+    )
+
     # Metrics are computed from the files that were just written, not from the
     # arrays in memory.  They are then, by construction, the numbers anyone
     # else gets from the same files with evaluation/evaluate.py or with evo,
@@ -196,6 +206,8 @@ def main() -> int:
         },
         "metrics": metrics,
         "trajectory_file": str(traj_path),
+        "map_file": str(map_path),
+        "map_points": int(len(cloud)),
     }
     result_path = out_dir / f"{tag}.json"
     result_path.write_text(json.dumps(record, indent=2, default=float), encoding="utf-8")
@@ -207,7 +219,8 @@ def main() -> int:
     print(f"  ATE se3  rmse {a['rmse']:.4f} m   median {a['median']:.4f} m")
     print(f"  ATE sim3 rmse {s['ate_translation_m']['rmse']:.4f} m   "
           f"scale {s['alignment_scale']:.4f}")
-    print(f"  wrote {traj_path} and {result_path}")
+    print(f"  map: {len(cloud)} landmarks")
+    print(f"  wrote {traj_path}, {map_path} and {result_path}")
     return 0
 
 

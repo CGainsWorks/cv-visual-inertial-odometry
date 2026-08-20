@@ -31,6 +31,9 @@ docs/plots/*.pdf
 # `make vocabulary`, so they are not tracked.
 models/*.pkl
 
+# Sparse maps are written next to the trajectories and regenerated with them.
+*.ply
+
 # Editors and platforms
 .vscode/
 .idea/

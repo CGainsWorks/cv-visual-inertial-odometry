@@ -48,6 +48,7 @@ recovers metric scale to within **4.7 per cent**.  Runtime is measured separatel
 | **Initialisation** | Gyroscope bias from rotation alone, then a linear solve for gravity, metric scale and per-keyframe velocity, then a tangent-plane refinement enforcing the gravity magnitude. Refuses when scale is unobservable |
 | **Loop closure** | Vocabulary tree over ORB descriptors trained by binary k-means, TF-IDF inverted index, DBoW2 scoring, geometric verification by PnP under RANSAC, four-degree-of-freedom pose graph |
 | **Calibration** | Camera-IMU rotation by orthogonal Procrustes on rotation increments; time offset by angular-rate correlation with sub-frame interpolation, plus a feature-velocity refinement |
+| **Outputs** | Per-frame 6-DoF trajectory in TUM format, the sparse landmark map as PLY, loop-closure events, and a JSON record carrying every metric, the timing breakdown and the commit |
 | **Evaluation** | ATE, RPE over distance intervals, Umeyama alignment with and without scale, drift per metre, all written out and cross-checked against `evo`: 26 of 30 comparisons agree to 1.8e-15 m |
 | **Datasets** | EuRoC MAV, run end to end. The loader also reads TUM VI's layout and its equidistant distortion model, but no TUM VI sequence has been run and no TUM VI number is quoted |
 | **Simulator** | Analytic trajectory with exact derivatives, IMU measurement generation, a textured renderer, and an ASL-format writer so the real dataset loader can be tested against known values |

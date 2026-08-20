@@ -139,6 +139,28 @@ def test_landmark_cloud_is_in_front_of_the_camera(run_both):
     assert np.abs(cloud).max() < 100.0
 
 
+def test_the_whole_map_outlives_the_window(run_both):
+    """The window holds at most ``max_landmarks``; the map holds the run."""
+    seq, runs = run_both
+    est = runs["vio"]
+    window = est.landmark_cloud()
+    whole = est.landmark_cloud(whole_map=True)
+    assert len(whole) > len(window)
+    assert len(whole) > est.cfg.max_landmarks
+    assert np.all(np.isfinite(whole))
+
+
+def test_the_map_round_trips_through_ply(run_both, tmp_path):
+    from vio.io.pointcloud import read_ply, write_ply
+
+    seq, runs = run_both
+    cloud = runs["vio"].landmark_cloud(whole_map=True)
+    path = write_ply(tmp_path / "map.ply", cloud, note="a test")
+    back = read_ply(path)
+    assert back.shape == cloud.shape
+    assert np.abs(back - cloud).max() < 1e-5
+
+
 @pytest.mark.slow
 def test_marginalisation_can_be_turned_off(rendered_sequence):
     """The ablation the README quotes has to actually run."""
