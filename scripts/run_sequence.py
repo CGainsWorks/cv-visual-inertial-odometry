@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from vio.evaluation.metrics import ate, drift_rate, rpe  # noqa: E402
 from vio.frontend.tracker import TrackerConfig  # noqa: E402
 from vio.io import euroc  # noqa: E402
-from vio.io.trajectory import write_tum  # noqa: E402
+from vio.io.trajectory import read_tum, write_tum  # noqa: E402
 from vio.pipeline.estimator import Estimator, EstimatorConfig  # noqa: E402
 
 DEFAULT_DATA = Path(
@@ -123,6 +123,9 @@ def main() -> int:
     ap.add_argument("--sim", action="store_true", help="run on a generated sequence")
     ap.add_argument("--duration", type=float, default=30.0)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--workers", type=int, default=1,
+                    help="how many runs shared the machine, recorded "
+                         "so the timing table can ignore contended runs")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
@@ -150,6 +153,13 @@ def main() -> int:
     write_tum(out_dir / f"{name}_gt.tum", gt_times, gt_poses, origin_ns,
               comment=f"{name} ground truth")
 
+    # Metrics are computed from the files that were just written, not from the
+    # arrays in memory.  They are then, by construction, the numbers anyone
+    # else gets from the same files with evaluation/evaluate.py or with evo,
+    # rather than numbers that happen to agree.
+    times, poses = read_tum(traj_path)
+    gt_times, gt_poses = read_tum(out_dir / f"{name}_gt.tum")
+
     # Both alignments are always reported.  A monocular visual-only trajectory
     # can only be scored under sim3, and quoting a visual-inertial number under
     # sim3 would hide the very thing the IMU is there to provide.
@@ -171,6 +181,7 @@ def main() -> int:
         "frames_with_pose": int(len(times)),
         "initialised": bool(est.initialised),
         "wall_seconds": round(elapsed, 3),
+        "workers": args.workers,
         "timing": est.timing.as_dict(),
         "events": est.events,
         "event_counts": est.event_summary(),

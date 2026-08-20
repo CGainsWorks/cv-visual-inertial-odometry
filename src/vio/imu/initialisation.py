@@ -31,12 +31,36 @@ here from the relations rather than ported:
    the two directions perpendicular to the current estimate and re-solving two
    or three times enforces ``|g| = 9.81`` without a constrained solver.
 
-Accelerometer bias is deliberately *not* estimated here.  Over a two-second
-window it is nearly indistinguishable from a tilt of the gravity vector, and
-trying to separate them makes the linear system badly conditioned rather than
-more informative.  It is left at zero and picked up by the sliding-window
-estimator over the following few seconds, which is measured in
-``docs/results.md`` rather than assumed.
+
+4. **Accelerometer bias**, in the same linear system.  This was originally
+   left out, on the standard-sounding argument that over a short window a bias
+   and a tilt of gravity look almost the same, so solving for both would make
+   the system badly conditioned rather than more informative.  Measuring it
+   said otherwise, and emphatically.  With a 0.55 m/s^2 bias, which is what
+   EuRoC's own ground truth reports for V1_01:
+
+   ==============  ===============  =============  =============
+   keyframes       solve for bias   scale error    gravity error
+   ==============  ===============  =============  =============
+   12              no                     61.0%          1.67 deg
+   12              yes                     0.8%          0.19 deg
+   20              no                      5.9%          3.22 deg
+   20              yes                     1.2%          0.08 deg
+   30              no                     47.6%          4.08 deg
+   30              yes                     1.4%          0.15 deg
+   ==============  ===============  =============  =============
+
+   Those are with sensor noise and a drifting bias; noise-free the "yes" rows
+   go to zero.  The condition number does rise, from about 200 to about 665 at
+   twelve keyframes, so the worry was not baseless.  It was simply outweighed: a bias
+   that is not solved for does not go away, it is absorbed by the scale and by
+   the gravity direction, and those are the two things the whole procedure
+   exists to produce.  The estimate is discarded if it exceeds ``max_acc_bias``,
+   on the grounds that no real accelerometer has a 1.5 m/s^2 bias and something
+   else has been absorbed instead.
+
+   ``scripts/ablate.py`` regenerates the table on the simulator, where the true
+   bias is known.
 """
 
 from __future__ import annotations
@@ -62,6 +86,8 @@ class InitialisationResult:
     #: World-frame velocity per keyframe, in the visual odometry's frame and
     #: already at metric scale.
     velocities: np.ndarray = field(default_factory=lambda: np.zeros((0, 3)))
+    #: Accelerometer bias, zero unless it was solved for.
+    acc_bias: np.ndarray = field(default_factory=lambda: np.zeros(3))
     #: Rotation taking the visual odometry frame into a gravity-aligned one.
     R_align: np.ndarray = field(default_factory=lambda: np.eye(3))
     condition_number: float = float("inf")
@@ -139,10 +165,25 @@ def _tangent_basis(v: np.ndarray) -> np.ndarray:
     return np.stack([b1, b2], axis=1)
 
 
-def _linear_alignment(poses_wc, T_body_cam: Pose, preintegrated, refine_gravity: bool):
-    """Solve for ``[v_0..v_n, g, s]``, optionally with ``|g|`` constrained.
+def _linear_alignment(poses_wc, T_body_cam: Pose, preintegrated,
+                      refine_gravity: bool, acc_bias: bool = False):
+    """Solve for ``[v_0..v_n, g, s]``, and optionally the accelerometer bias.
 
-    Returns ``(velocities, gravity, scale, condition_number)`` or ``None``.
+    Adding the accelerometer bias costs three more columns and keeps the system
+    linear, because the preintegrated deltas depend on it to first order
+    through the Jacobians the block already carries::
+
+        dp_ij(b_a) = dp_ij + J_p_ba db_a
+        dv_ij(b_a) = dv_ij + J_v_ba db_a
+
+    Whether it is worth solving for is an empirical question, not an obvious
+    one: over a short window an accelerometer bias and a tilt of gravity look
+    almost the same, so the extra columns can make the system worse conditioned
+    rather than more informative.  ``scripts/ablate.py`` measures it and
+    ``docs/results.md`` reports the answer.
+
+    Returns ``(velocities, gravity, scale, bias, condition_number)`` or
+    ``None``.
     """
     n = len(poses_wc)
     # T_wc = T_wb T_bc, so R_wb = R_wc R_bc^T and p_wb = p_wc - R_wb t_bc.
@@ -161,7 +202,8 @@ def _linear_alignment(poses_wc, T_body_cam: Pose, preintegrated, refine_gravity:
         # two-dimensional correction in the tangent plane is solved for.
         constrained = stage > 0 and gravity is not None
         n_g = 2 if constrained else 3
-        n_x = 3 * n + n_g + 1
+        n_b = 3 if acc_bias else 0
+        n_x = 3 * n + n_g + 1 + n_b
         A = np.zeros((6 * (n - 1), n_x))
         b = np.zeros(6 * (n - 1))
         if constrained:
@@ -196,6 +238,13 @@ def _linear_alignment(poses_wc, T_body_cam: Pose, preintegrated, refine_gravity:
                 A[row: row + 3, 3 * n: 3 * n + 3] = -0.5 * np.eye(3) * dt * dt
                 A[row + 3: row + 6, 3 * n: 3 * n + 3] = -np.eye(3) * dt
 
+            if acc_bias:
+                # Moving the bias moves the deltas, which sit on the
+                # right-hand side, so these columns enter with a plus sign.
+                start = 3 * n + n_g + 1
+                A[row: row + 3, start: start + 3] = -R_wb[k] @ pre.J_p_ba
+                A[row + 3: row + 6, start: start + 3] = -R_wb[k] @ pre.J_v_ba
+
             b[row: row + 3] = rhs_p
             b[row + 3: row + 6] = rhs_v
 
@@ -214,8 +263,9 @@ def _linear_alignment(poses_wc, T_body_cam: Pose, preintegrated, refine_gravity:
         else:
             gravity = x[3 * n: 3 * n + 3]
         scale = float(x[3 * n + n_g])
+        bias = x[3 * n + n_g + 1: 3 * n + n_g + 4] if acc_bias else np.zeros(3)
 
-    return velocities, gravity, scale, cond
+    return velocities, gravity, scale, bias, cond
 
 
 def initialise(
@@ -225,6 +275,8 @@ def initialise(
     min_scale: float = 1e-3,
     max_gravity_error: float = 1.0,
     min_excitation: float = 0.10,
+    estimate_acc_bias: bool = False,
+    max_acc_bias: float = 1.5,
 ) -> InitialisationResult:
     """Recover bias, gravity, scale and velocities from a bootstrap window.
 
@@ -243,11 +295,17 @@ def initialise(
 
     excitation = translational_excitation(R_wb, blocks)
 
-    solved = _linear_alignment(poses_wc, T_body_cam, blocks, refine_gravity=True)
+    solved = _linear_alignment(poses_wc, T_body_cam, blocks, refine_gravity=True,
+                               acc_bias=estimate_acc_bias)
     if solved is None:
         return InitialisationResult(False, "alignment system is rank deficient",
                                     gyro_bias=bg, excitation=excitation)
-    velocities, gravity, scale, cond = solved
+    velocities, gravity, scale, acc_bias, cond = solved
+    # A bias larger than any real accelerometer's means the extra columns have
+    # absorbed something else, most likely a gravity tilt, so it is discarded
+    # rather than propagated into the estimator.
+    if np.linalg.norm(acc_bias) > max_acc_bias:
+        acc_bias = np.zeros(3)
 
     if scale < min_scale:
         return InitialisationResult(False, f"non-positive scale {scale:.4g}",
@@ -269,6 +327,7 @@ def initialise(
         gravity=gravity,
         scale=scale,
         velocities=velocities,
+        acc_bias=acc_bias,
         R_align=R_align,
         condition_number=cond,
         excitation=excitation,

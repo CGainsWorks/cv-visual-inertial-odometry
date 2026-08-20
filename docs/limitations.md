@@ -94,6 +94,22 @@ numerically through a rank-two residual rather than structurally, so a
 sufficiently large loop error can still tilt the map by an amount the
 gravity sigma allows.
 
+## The visual-only baseline reports at keyframe rate, not frame rate
+
+With the IMU switched off there is nothing to propagate a pose between
+keyframes, so the estimator holds the last keyframe's pose until the next one.
+Interpolating towards a pose it has not computed yet would be inventing
+information, and extrapolating at constant velocity would be inventing a
+velocity a monocular system does not have.  The consequence is that the
+visual-only trajectory is a staircase at the frame level, which adds a small
+amount to its error and, more visibly, makes it lag: feeding those held poses
+into the camera-IMU time-offset correlation produced about 7 ms of apparent
+offset on a sequence whose true offset is zero.  ``scripts/calibrate.py`` uses
+keyframe poses for that reason.
+
+The visual-inertial configuration does not have the problem, because
+preintegration propagates the state between keyframes exactly.
+
 ## Loop closure is not a full SLAM back end
 
 Verified loops correct the *trajectory* through a pose graph.  They do not

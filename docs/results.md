@@ -65,13 +65,36 @@ of hand.
 _No results yet.  Run `make experiments`._
 <!-- /table:timing -->
 
+These come from runs that had the machine to themselves.  The accuracy tables
+above come from an eight-way parallel sweep, which does not affect them because
+the estimator is deterministic, but which reads about seventy per cent slower
+per frame.  `make timing` produces the uncontended figures and the timing table
+ignores any run that shared the machine.
+
 **This does not run in real time and nothing here claims it does.**  A 20 Hz
 camera allows 50 ms per frame.  The front end fits comfortably; the window
 solve does not.  The constant factor is Python, not the algorithm: the window
 is bounded, the solve is Schur-complemented, and the same graph in C++ would be
 inside budget.
 
-## 4. IMU integration: Euler against midpoint
+## 4. Accelerometer bias at initialisation
+
+This one changed my mind.  The bias was originally left out of the linear
+alignment on the standard argument that over a short window a bias and a tilt
+of gravity look almost the same, so solving for both makes the system worse
+conditioned rather than more informative.  The condition number does indeed
+roughly triple.  It is outweighed, because a bias that is not solved for does
+not go away: it is absorbed by the scale and by the gravity direction, which
+are the two things the procedure exists to produce.
+
+<!-- table:initialisation -->
+_No ablation yet.  Run `make ablate`._
+<!-- /table:initialisation -->
+
+The second bias in the table, 0.55 m/s^2, is not invented: it is what EuRoC's
+own ground truth reports for the accelerometer on V1_01.
+
+## 5. IMU integration: Euler against midpoint
 
 Worst error over blocks of the given length, against an analytic trajectory so
 the reference has no integration error of its own.
@@ -87,7 +110,7 @@ costs nothing, but only if each acceleration is rotated by the attitude at
 keeping the start-of-interval rotation, which is the obvious first attempt, makes
 velocity worse than plain Euler.
 
-## 5. Gyroscope-predicted feature tracking
+## 6. Gyroscope-predicted feature tracking
 
 Integrating the gyroscope across a frame interval predicts where each feature
 will land, which ought to help KLT.
@@ -101,7 +124,7 @@ native 20 Hz, because the displacement is already inside the search window.  It
 starts paying below about 7 Hz.  So it is off by default, and kept because the
 conclusion is a property of this dataset's frame rate rather than of the idea.
 
-## 6. Back end
+## 7. Back end
 
 <!-- table:backend -->
 _No ablation yet.  Run `make ablate`._
@@ -112,13 +135,13 @@ asserts they agree to 1e-11 in the Jacobian.  The group exists because a
 thousand Python objects per linearisation is what makes a Python bundle
 adjustment slow, not the arithmetic.
 
-## 7. Sliding-window size
+## 8. Sliding-window size
 
 <!-- table:window -->
 _No ablation yet.  Run `make ablate`._
 <!-- /table:window -->
 
-## 8. Loop closure
+## 9. Loop closure
 
 The vocabulary is trained on **Machine Hall 01 and 02 only** and evaluated
 elsewhere; the training set is recorded inside the vocabulary file.  A
@@ -135,7 +158,7 @@ reported separately because they are separate: a detector with perfect
 precision buys nothing if the trajectory had not drifted enough for the
 correction to matter.
 
-## 9. Camera-IMU calibration
+## 10. Camera-IMU calibration
 
 The extrinsic rotation is recovered from rotation alone and compared against
 EuRoC's published value, which the routine never sees.  The time offset is

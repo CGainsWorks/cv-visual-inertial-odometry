@@ -105,6 +105,10 @@ class EstimatorConfig:
     huber_pixels: float = 2.0
 
     #, initialisation ----------------------------------------------------
+    #: Solve for the accelerometer bias in the linear alignment as well as
+    #: gravity, scale and velocity.  On, because measuring it settled an
+    #: argument the other way: see vio.imu.initialisation for the table.
+    initialise_acc_bias: bool = True
     bootstrap_keyframes: int = 12
     bootstrap_parallax: float = 0.035
     max_bootstrap_keyframes: int = 60
@@ -564,7 +568,8 @@ class Estimator:
             blocks.append(
                 preintegrate(self.imu, a.stamp, b.stamp, noise=self.imu_noise)
             )
-        result = initialise(poses_wc, blocks, self.T_body_cam)
+        result = initialise(poses_wc, blocks, self.T_body_cam,
+                            estimate_acc_bias=self.cfg.initialise_acc_bias)
         if not result.ok:
             self._log("alignment rejected", reason=result.reason,
                       keyframes=len(self.keyframes))
@@ -580,6 +585,7 @@ class Estimator:
             "inertial alignment", scale=round(result.scale, 4),
             gravity=np.round(result.gravity, 3).tolist(),
             gyro_bias=np.round(result.gyro_bias, 5).tolist(),
+            acc_bias=np.round(result.acc_bias, 4).tolist(),
             excitation=round(result.excitation, 3),
             condition=round(result.condition_number, 1),
             keyframes=len(self.keyframes),
@@ -595,7 +601,7 @@ class Estimator:
             self.values[kf.pose_key] = PoseVariable(new)
             self.values[kf.vel_key] = VectorVariable(Ra @ v)
             self.values[kf.bias_key] = BiasVariable(
-                np.concatenate([np.zeros(3), result.gyro_bias])
+                np.concatenate([result.acc_bias, result.gyro_bias])
             )
         for lid in list(self.landmarks):
             key = f"l{lid}"
@@ -615,7 +621,7 @@ class Estimator:
                 entry.pose = Pose(
                     so3.project(Ra @ entry.pose.R), Ra @ (s * entry.pose.t)
                 )
-        self._bias = ImuBias(np.zeros(3), result.gyro_bias)
+        self._bias = ImuBias(result.acc_bias, result.gyro_bias)
         self._scale_applied = s
         # Re-preintegrate at the newly known gyro bias before the first
         # inertial solve, so the factors are not linearised about zero.

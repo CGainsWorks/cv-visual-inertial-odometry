@@ -115,6 +115,19 @@ class RpeResult:
         }
 
 
+#: Relative slack on the association tolerance.
+#:
+#: A sample sitting exactly on the boundary is a knife edge, and floating-point
+#: noise decides which side it falls.  That is not hypothetical: writing a
+#: trajectory to a TUM file and reading it back perturbs the timestamps by
+#: about 3e-14 s, which was enough to flip one borderline pair on EuRoC MH_01
+#: and move the reported ATE by 1.5 mm.  The tolerance is a modelling choice
+#: rather than an exact quantity, so it is applied with a slack far above that
+#: noise and far below anything that could change which samples are genuinely
+#: close.
+ASSOCIATION_SLACK = 1e-9
+
+
 def associate(est_times, ref_times, max_difference: float = 0.02):
     """Nearest-neighbour association between two time series.
 
@@ -134,7 +147,7 @@ def associate(est_times, ref_times, max_difference: float = 0.02):
     nearest = np.where(np.abs(est_times - left) <= np.abs(right - est_times),
                        idx - 1, idx)
     diff = np.abs(ref_times[nearest] - est_times)
-    ok = diff <= max_difference
+    ok = diff <= max_difference * (1.0 + ASSOCIATION_SLACK)
 
     est_idx, ref_idx, used = [], [], set()
     for i in np.nonzero(ok)[0]:

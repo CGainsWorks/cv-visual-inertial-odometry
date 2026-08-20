@@ -23,6 +23,9 @@ RESULTS ?= results
 SEQUENCE ?= V1_01_easy
 MODE ?= vio
 JOBS ?= 6
+# Timing is measured on these, one at a time, because a parallel sweep
+# inflates milliseconds per frame by about seventy per cent.
+TIMING_SEQUENCES ?= V1_01_easy V1_02_medium MH_01_easy
 
 .DEFAULT_GOAL := help
 
@@ -92,8 +95,16 @@ calibrate:  ## Estimate the camera-IMU extrinsic and time offset from a sequence
 ablate:  ## The ablations behind the claims in docs/results.md
 	$(PYTHON) scripts/ablate.py --data $(EUROC_ROOT) --out $(RESULTS)
 
+.PHONY: timing
+timing:  ## Honest per-frame timings: one sequence at a time, nothing else running
+	@for s in $(TIMING_SEQUENCES); do \
+		echo "timing $$s"; \
+		$(PYTHON) scripts/run_sequence.py $$s --mode vio --data $(EUROC_ROOT) \
+			--out $(RESULTS) --workers 1 --quiet; \
+	done
+
 .PHONY: profile
-profile:  ## Per-stage runtime breakdown on one sequence
+profile:  ## Function-level cProfile breakdown on one sequence
 	$(PYTHON) scripts/profile_run.py $(SEQUENCE) --data $(EUROC_ROOT) --out $(RESULTS)
 
 # ---------------------------------------------------------------------------

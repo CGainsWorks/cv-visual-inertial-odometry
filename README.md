@@ -22,12 +22,12 @@ it is to score the visual baseline with a similarity alignment that is handed
 the true scale, score the visual-inertial result rigidly, and put the two side
 by side.
 
-<!-- headline -->
+<!-- table:headline -->
 Across the eight EuRoC sequences the visual-inertial configuration reaches a
 mean absolute trajectory error of **0.000 m** under rigid alignment and
 recovers metric scale to within **0.0 per cent**, at about **0 ms per frame**
 on one core.
-<!-- /headline -->
+<!-- /table:headline -->
 
 ### What it looks like
 
@@ -155,14 +155,25 @@ The design decisions worth reading about are the ones that started as an
 assumption and were changed by a measurement. Each of these was a real bug or a
 real wrong call, caught by a test or an ablation rather than by inspection.
 
+**I left the accelerometer bias out of initialisation, on a good argument
+that was wrong.** Over a two-second window a bias and a tilt of gravity look
+almost the same, so solving for both ought to make the linear system worse
+conditioned rather than more informative. The condition number does indeed
+roughly triple. It is outweighed: a bias that is not solved for does not go
+away, it is absorbed by the scale and by the gravity direction, which are the
+two things the procedure exists to produce. With a 0.55 m/s2 bias, which is
+what EuRoC's own ground truth reports for V1_01, leaving it out cost up to
+61 per cent of scale and 4 degrees of gravity; solving for it brings them to
+about 1 per cent and 0.2 degrees. [§4](docs/results.md#4-accelerometer-bias-at-initialisation)
+
 **Midpoint integration made velocity worse than Euler.** Averaging the two
 accelerometer readings across an interval is second-order accurate, so it
 should have been strictly better. It was worse, because the two accelerations
 have to be rotated into the reference frame by the attitude at *their own* end
 of the interval before averaging, and the first version rotated both by the
-start-of-interval attitude. Fixed, midpoint is between two and three orders of
-magnitude more accurate than Euler for the same cost.
-[§4](docs/results.md#4-imu-integration-euler-against-midpoint)
+start-of-interval attitude. Fixed, midpoint is 44 times more accurate over a
+50 ms block and 839 times over a one-second block, for the same cost.
+[§5](docs/results.md#5-imu-integration-euler-against-midpoint)
 
 **A robust kernel on loop edges suppressed the loop closure.** A Cauchy kernel
 seemed obviously right for a constraint that might be a false positive. It is
@@ -201,7 +212,7 @@ nothing.** Absorbing the departing keyframe's landmark observations turns a
 15x15 dense prior into a 550x550 one: 26 ms to 1042 ms per keyframe, for an
 accuracy change smaller than the run-to-run spread. Only the inertial factors
 are marginalised now, which is an approximation and is named as one.
-[§6](docs/results.md#6-back-end)
+[§7](docs/results.md#7-back-end)
 
 **The gyroscope-predicted tracking guess buys nothing at 20 Hz.** It halves the
 initial guess error, from 5.4 px to 2.1 px on V1_01, and gains exactly zero
@@ -209,7 +220,7 @@ tracked features, because a twelve-pixel displacement is already inside a 21x21
 search window. It starts paying below about 7 Hz. It is off by default and the
 frame-rate table is kept, because the conclusion is a property of this dataset
 rather than of the idea.
-[§5](docs/results.md#5-gyroscope-predicted-feature-tracking)
+[§6](docs/results.md#6-gyroscope-predicted-feature-tracking)
 
 **Descriptors computed where a landmark projects match nothing.** Loop
 verification needs descriptors that have a 3-D position, and the first version

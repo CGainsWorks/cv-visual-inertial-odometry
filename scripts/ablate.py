@@ -308,7 +308,64 @@ def ablate_window(args) -> dict:
     return {"rows": rows}
 
 
+def ablate_initialisation(args) -> dict:
+    """Whether solving for the accelerometer bias at initialisation helps.
+
+    It was left out originally, on the argument that a bias and a gravity tilt
+    look almost the same over a short window.  The measurement says the
+    opposite, and says it loudly, so the argument is preserved here as a table
+    rather than as an assertion.
+    """
+    from vio.geometry import Pose
+    from vio.imu.initialisation import initialise
+    from vio.types import GRAVITY
+
+    rows = []
+    print()
+    print("Accelerometer bias in the linear alignment")
+    print(f"{'true |b_a|':>11s} {'keyframes':>10s} {'solve':>6s} {'scale err':>10s} "
+          f"{'gravity':>9s} {'b_a err':>9s} {'condition':>10s}")
+    for bias in ([0.05, -0.03, 0.02], [0.0, 0.55, 0.07]):
+        for n_kf in (12, 20, 30):
+            cfg = SimConfig(
+                duration=12.0, seed=13,
+                initial_bias=ImuBias(bias, [0.004, -0.006, 0.003]),
+                bias_walk=True,
+            )
+            seq = simulate(cfg)
+            T_bc = cfg.T_body_cam
+            idx = list(range(0, n_kf * 3, 3))
+            poses = [seq.states[i].pose * T_bc for i in idx]
+            blocks = [
+                preintegrate(seq.imu, seq.frames[a].true_stamp,
+                             seq.frames[b].true_stamp, noise=cfg.imu_noise)
+                for a, b in zip(idx[:-1], idx[1:])
+            ]
+            for solve in (False, True):
+                r = initialise(poses, blocks, T_bc, estimate_acc_bias=solve)
+                if not r.ok:
+                    continue
+                angle = float(np.degrees(np.arccos(np.clip(
+                    r.gravity @ GRAVITY / np.linalg.norm(r.gravity)
+                    / np.linalg.norm(GRAVITY), -1.0, 1.0))))
+                rows.append({
+                    "true_bias": list(bias), "keyframes": n_kf,
+                    "solve_acc_bias": solve,
+                    "scale_error_percent": 100.0 * abs(r.scale - 1.0),
+                    "gravity_error_deg": angle,
+                    "bias_error": float(np.linalg.norm(r.acc_bias - np.array(bias))),
+                    "condition_number": r.condition_number,
+                })
+                print(f"{np.linalg.norm(bias):11.3f} {n_kf:10d} {str(solve):>6s} "
+                      f"{rows[-1]['scale_error_percent']:9.2f}% "
+                      f"{angle:8.3f}d {rows[-1]['bias_error']:9.3f} "
+                      f"{r.condition_number:10.1f}")
+    del Pose
+    return {"rows": rows}
+
+
 ABLATIONS = {
+    "initialisation": ablate_initialisation,
     "integration": ablate_integration,
     "frontend": ablate_frontend,
     "backend": ablate_backend,
@@ -337,7 +394,17 @@ def main() -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     path = out / "ablations.json"
-    path.write_text(json.dumps(results, indent=2, default=float), encoding="utf-8")
+    # Merge rather than overwrite: running one ablation should not silently
+    # delete the results of the others, which is how a document ends up
+    # quoting a table nothing on disk can regenerate.
+    existing = {}
+    if path.exists():
+        try:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            existing = {}
+    existing.update(results)
+    path.write_text(json.dumps(existing, indent=2, default=float), encoding="utf-8")
     print(f"\nwrote {path}")
     return 0
 

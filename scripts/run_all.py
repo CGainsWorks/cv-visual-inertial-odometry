@@ -86,6 +86,10 @@ def main() -> int:
         print("run scripts/fetch_euroc.py first")
         return 2
 
+    # Every record carries the worker count, so the timing table can ignore
+    # runs that shared the machine.  Accuracy is unaffected by contention --
+    # the estimator is deterministic -- but milliseconds per frame is not.
+    extra = list(extra) + ["--workers", str(args.jobs)]
     jobs = [
         (s, m, args.data, args.out, extra)
         for s in args.sequences for m in args.modes

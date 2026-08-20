@@ -39,6 +39,24 @@ Two details in
 * **The determinant is corrected.**  Without it a noisy set can fit better with
   a reflection, which is not a rotation.
 
+### The inputs have to be independent of the answer
+
+The first version of `scripts/calibrate.py` took ground-truth body poses,
+multiplied them by the *published* extrinsic to get camera rotations, and then
+recovered that extrinsic to within 1e-14 radians.  That is not a calibration,
+it is an identity: the answer had been used to construct the input, and the
+1e-14 was the round-off in a matrix product.
+
+What runs now is the real procedure.  Camera rotations come from **visual
+odometry over the images** with the IMU switched off, so nothing about the
+extrinsic or the IMU enters them.  Body rotations come from **integrating the
+raw gyroscope** between the same instants, so nothing about the camera enters
+them.  The published extrinsic is loaded only at the end, to score the result.
+
+That is slower, because it means running the estimator, and the answer is worse,
+because it now carries the visual odometry's own rotation error.  Both are the
+correct outcome: the number means something now.
+
 The result on real sequences is in [results.md](results.md) §9, compared
 against EuRoC's published extrinsic, which the routine never sees.
 

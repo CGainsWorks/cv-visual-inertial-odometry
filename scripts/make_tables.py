@@ -31,6 +31,10 @@ sys.path.insert(0, str(ROOT / "src"))
 
 DOCUMENTS = [ROOT / "README.md", ROOT / "docs" / "results.md"]
 
+#: Spelled out because these generators are edited by scripted patches often
+#: enough that an escaped newline inside a replacement string has bitten twice.
+LINE_BREAK = chr(10)
+
 
 def _load(results: Path) -> dict:
     runs = {}
@@ -75,6 +79,25 @@ def _rows(runs: dict):
 # ---------------------------------------------------------------------------
 # Generators.  Each returns the markdown that goes between its markers.
 # ---------------------------------------------------------------------------
+
+
+def table_headline(runs: dict) -> str:
+    """The two sentences at the top of the README, generated like any table."""
+    rows = [r["vio"] for r in _rows(runs) if "vio" in r]
+    if not rows:
+        return ("_No results yet.  Run `make experiments`, then `make tables`._")
+    ate = np.mean([r["ate"] for r in rows])
+    scale = np.mean([100.0 * abs(r["scale"] - 1.0) for r in rows])
+    ms = np.mean([r["ms"] for r in rows])
+    return "\n".join([
+        f"Across the {len(rows)} EuRoC sequences the visual-inertial "
+        "configuration reaches a",
+        f"mean absolute trajectory error of **{ate:.3f} m** under rigid "
+        "alignment and",
+        f"recovers metric scale to within **{scale:.1f} per cent**, at about "
+        f"**{ms:.0f} ms per frame**",
+        "on one core.",
+    ])
 
 
 def table_euroc(runs: dict) -> str:
@@ -129,10 +152,17 @@ def table_drift(runs: dict) -> str:
 
 
 def table_timing(runs: dict) -> str:
+    """Only runs that had the machine to themselves.
+
+    Accuracy does not care how many other runs were going at the time, because
+    the estimator is deterministic.  Milliseconds per frame cares a great deal:
+    the same sequence measured under an eight-way parallel sweep reads about
+    seventy per cent slower than the same code measured alone.
+    """
     rows = []
     for name in sorted(runs):
         record = runs[name].get("vio")
-        if record is None:
+        if record is None or record.get("workers", 1) > 1:
             continue
         t = record["timing"]
         share = t["keyframes"] / max(t["frames"], 1)
@@ -148,7 +178,9 @@ def table_timing(runs: dict) -> str:
             "kf": 100.0 * share,
         })
     if not rows:
-        return "_No results yet.  Run `make experiments`._"
+        return ("_No uncontended timing runs yet.  `make experiments` runs in "
+                "parallel, which inflates milliseconds per frame; run "
+                "`make timing` for the honest figures._")
     lines = [
         "| sequence | tracking | preintegration | triangulation | window solve "
         "| marginalisation | total | effective |",
@@ -170,8 +202,9 @@ def table_timing(runs: dict) -> str:
         f"{np.mean([r['hz'] for r in rows]):.1f} Hz |"
     )
     lines.append("")
-    lines.append("All figures are milliseconds per *frame* on one core; the "
-                 "per-keyframe stages are scaled by the keyframe rate.")
+    lines.append("All figures are milliseconds per *frame* on one core, from "
+                 "runs that had the machine to themselves; the per-keyframe "
+                 "stages are scaled by the keyframe rate.")
     return "\n".join(lines)
 
 
@@ -193,6 +226,25 @@ def table_ablation_integration(runs: dict, ablations: dict) -> str:
             f"{e['rotation_rad']:.2e} rad | {m['rotation_rad']:.2e} rad |"
         )
     return "\n".join(lines)
+
+
+def table_ablation_initialisation(runs: dict, ablations: dict) -> str:
+    data = ablations.get("initialisation")
+    if not data or "rows" not in data:
+        return "_No ablation yet.  Run `make ablate`._"
+    lines = [
+        "| true bias | keyframes | solve for bias | scale error | gravity error "
+        "| bias error | condition |",
+        "| ---: | ---: | :---: | ---: | ---: | ---: | ---: |",
+    ]
+    for r in data["rows"]:
+        lines.append(
+            f"| {np.linalg.norm(r['true_bias']):.2f} m/s2 | {r['keyframes']} | "
+            f"{'yes' if r['solve_acc_bias'] else 'no'} | "
+            f"{r['scale_error_percent']:.2f}% | {r['gravity_error_deg']:.2f} deg | "
+            f"{r['bias_error']:.3f} m/s2 | {r['condition_number']:.0f} |"
+        )
+    return LINE_BREAK.join(lines)
 
 
 def table_ablation_frontend(runs: dict, ablations: dict) -> str:
@@ -313,9 +365,11 @@ def table_calibration(runs: dict, ablations: dict, results: Path) -> str:
 
 
 GENERATORS = {
+    "headline": lambda runs, abl, res: table_headline(runs),
     "euroc": lambda runs, abl, res: table_euroc(runs),
     "drift": lambda runs, abl, res: table_drift(runs),
     "timing": lambda runs, abl, res: table_timing(runs),
+    "initialisation": lambda runs, abl, res: table_ablation_initialisation(runs, abl),
     "integration": lambda runs, abl, res: table_ablation_integration(runs, abl),
     "frontend": lambda runs, abl, res: table_ablation_frontend(runs, abl),
     "backend": lambda runs, abl, res: table_ablation_backend(runs, abl),
