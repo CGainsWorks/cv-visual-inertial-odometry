@@ -58,8 +58,7 @@ class PinholeCamera:
         if self.model not in ("radtan", "equidistant", "none"):
             raise ValueError(f"unknown distortion model {self.model!r}")
 
-    #, basic accessors ---------------------------------------------------
-
+    # -- basic accessors ---------------------------------------------------
     @property
     def K(self) -> np.ndarray:
         return np.array(
@@ -71,8 +70,7 @@ class PinholeCamera:
         """One number to scale normalised residuals into pixels."""
         return 0.5 * (self.fx + self.fy)
 
-    #, distortion --------------------------------------------------------
-
+    # -- distortion --------------------------------------------------------
     def distort(self, xn: np.ndarray) -> np.ndarray:
         """Normalised undistorted ``(N, 2)`` to normalised distorted ``(N, 2)``."""
         xn = np.atleast_2d(np.asarray(xn, dtype=float))

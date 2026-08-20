@@ -74,7 +74,7 @@ class EstimatorConfig:
     #: the solve time grows faster than the accuracy does.
     window_size: int = 10
 
-    #, keyframe policy ---------------------------------------------------
+    # -- keyframe policy ---------------------------------------------------
     #: Median normalised-coordinate parallax against the previous keyframe.
     #: 0.02 is roughly nine pixels at EuRoC's focal length.
     keyframe_parallax: float = 0.02
@@ -83,7 +83,7 @@ class EstimatorConfig:
     keyframe_min_interval: float = 0.045
     keyframe_max_interval: float = 0.5
 
-    #, landmarks ---------------------------------------------------------
+    # -- landmarks ---------------------------------------------------------
     #: Keyframe observations a track needs before it is triangulated.  Two
     #: is the geometric minimum and the parallax test in
     #: vio.frontend.geometry is what actually guards quality; requiring
@@ -101,11 +101,11 @@ class EstimatorConfig:
     #: in pixels, applied after each optimisation.
     outlier_pixels: float = 3.0
 
-    #, weighting ---------------------------------------------------------
+    # -- weighting ---------------------------------------------------------
     pixel_sigma: float = 1.0
     huber_pixels: float = 2.0
 
-    #, initialisation ----------------------------------------------------
+    # -- initialisation ----------------------------------------------------
     #: Solve for the accelerometer bias in the linear alignment as well as
     #: gravity, scale and velocity.  On, because measuring it settled an
     #: argument the other way: see vio.imu.initialisation for the table.
@@ -114,12 +114,12 @@ class EstimatorConfig:
     bootstrap_parallax: float = 0.035
     max_bootstrap_keyframes: int = 60
 
-    #, solver ------------------------------------------------------------
+    # -- solver ------------------------------------------------------------
     window_iterations: int = 8
     bootstrap_iterations: int = 15
     #: Turning this off replaces the marginal prior with a fixed-covariance
     #: prior on the oldest kept keyframe, which is what most people reach for
-    #: first.  ``scripts/ablate_backend.py`` measures the difference.
+    #: first.  ``scripts/ablate.py --only backend`` measures the difference.
     marginalise: bool = True
     #: Standard deviations for the fallback prior: rotation (rad), position (m).
     fallback_prior_sigma: tuple = (0.02, 0.05)
@@ -257,8 +257,7 @@ class Estimator:
         self.keyframe_poses: dict = {}
         self.keyframe_stamps: dict = {}
 
-    #, public -----------------------------------------------------------
-
+    # -- public -----------------------------------------------------------
     @property
     def initialised(self) -> bool:
         return self.state == "RUNNING"
@@ -324,8 +323,7 @@ class Estimator:
         ]
         return np.stack(pts) if pts else np.zeros((0, 3))
 
-    #, keyframe policy ---------------------------------------------------
-
+    # -- keyframe policy ---------------------------------------------------
     def _is_keyframe(self, feats) -> bool:
         cfg = self.cfg
         if not self.keyframes:
@@ -351,8 +349,7 @@ class Estimator:
         ]
         return float(np.median(disp)) > cfg.keyframe_parallax
 
-    #, keyframe handling -------------------------------------------------
-
+    # -- keyframe handling -------------------------------------------------
     def attach_loop_detector(self, detector) -> None:
         """Feed every keyframe to a :class:`vio.loop_closure.detector.LoopDetector`.
 
@@ -439,8 +436,7 @@ class Estimator:
             self.keyframes[0].frame_index if self.keyframes else feats.index
         )
 
-    #, bootstrap ---------------------------------------------------------
-
+    # -- bootstrap ---------------------------------------------------------
     def _bootstrap_step(self, kf: Keyframe) -> None:
         cfg = self.cfg
         if len(self.keyframes) < 2:
@@ -642,8 +638,7 @@ class Estimator:
             )
         self._optimise(self.cfg.bootstrap_iterations)
 
-    #, running -----------------------------------------------------------
-
+    # -- running -----------------------------------------------------------
     def _running_step(self, kf: Keyframe) -> None:
         prev = self.keyframes[-2]
         if self.cfg.use_imu and kf.preintegrated is not None:
@@ -695,8 +690,7 @@ class Estimator:
         self._set_pose(kf, res.T_world_cam)
         return True
 
-    #, map ---------------------------------------------------------------
-
+    # -- map ---------------------------------------------------------------
     def _set_pose(self, kf: Keyframe, T_world_cam: Pose) -> None:
         T_wb = T_world_cam * self.T_body_cam.inverse()
         self.values[kf.pose_key] = PoseVariable(T_wb)
@@ -780,8 +774,7 @@ class Estimator:
             self.values.pop(f"l{lid}", None)
             self.landmarks.pop(lid, None)
 
-    #, optimisation ------------------------------------------------------
-
+    # -- optimisation ------------------------------------------------------
     def _build_graph(self, visual_only: bool = False) -> FactorGraph:
         cfg = self.cfg
         g = FactorGraph()
@@ -853,8 +846,7 @@ class Estimator:
         self.timing.optimise += time.perf_counter() - t0
         self.timing.solver_iterations += res.iterations
 
-    #, window management -------------------------------------------------
-
+    # -- window management -------------------------------------------------
     def _slide(self) -> None:
         cfg = self.cfg
         old = self.keyframes[0]
@@ -867,7 +859,6 @@ class Estimator:
             drop += [old.vel_key, old.bias_key]
 
         # Landmarks that would be left with fewer than two observations go too.
-        survivors = {k.kf_id for k in self.keyframes}
         for lid in list(self.landmarks):
             key = f"l{lid}"
             if key not in self.values:
@@ -876,7 +867,6 @@ class Estimator:
             remaining = sum(1 for kf in self.keyframes if lid in kf.features)
             if remaining < 2:
                 drop.append(key)
-        del survivors
 
         if cfg.marginalise and cfg.use_imu and self.state == "RUNNING":
             t0 = time.perf_counter()
@@ -909,8 +899,8 @@ class Estimator:
         actually carries scale and gravity across the window boundary, and that
         one is kept.
 
-        ``scripts/ablate_backend.py`` compares this against no marginalisation
-        at all.
+        ``scripts/ablate.py --only backend`` compares this against no
+        marginalisation at all.
         """
         first = self.keyframes[0] if self.keyframes else None
         if first is None or first.preintegrated is None:
@@ -932,8 +922,7 @@ class Estimator:
         prior, _, keep = marginalise(g, self.values, state_drop)
         return prior, keep
 
-    #, propagation and output -------------------------------------------
-
+    # -- propagation and output -------------------------------------------
     def _gyro_rotation(self, stamp: float):
         if (
             self.imu is None

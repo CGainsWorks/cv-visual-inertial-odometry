@@ -250,8 +250,14 @@ why the real-data case is left alone.
 ./scripts/setup.sh
 python scripts/fetch_euroc.py          # about 19 GB
 make experiments                       # every sequence, both configurations
-make vocabulary loop calibrate ablate
-make plots tables docs-check
+make vocabulary loop calibrate ablate seed-spread
+make timing                            # separately, with the machine to itself
+make plots tables publish docs-check
 ```
+
+The records those produce are committed under
+[results/published](../results/published); the trajectory files are not, because
+24 MB of text that two commands regenerate would make a clone an order of
+magnitude heavier than the code.
 
 `make evo-check` then re-scores every trajectory file with `evo`.  Twenty-six of the thirty comparisons agree to 1.8e-15 metres, which is round-off.  The remaining four are all MH_01, where exactly one estimate sits on the 20 ms association boundary: ours keeps it, evo does not, and the ATE differs by up to 2.2 mm on 3639 pairs against 3638.  `make evo-check` prints the comparison and distinguishes a tie-break from a genuine disagreement.

@@ -113,7 +113,7 @@ def main() -> int:
     results = Path(args.results)
     problems = []
 
-    #, 1. tables -------------------------------------------------------
+    # -- 1. tables -------------------------------------------------------
     tables = render(results)
     for document in DOCUMENTS:
         stale = apply(document, tables, write=False)
@@ -123,7 +123,7 @@ def main() -> int:
                 f"run `make tables`"
             )
 
-    #, 2. prose --------------------------------------------------------
+    # -- 2. prose --------------------------------------------------------
     if not args.skip_prose:
         from make_tables import _load
 
@@ -155,7 +155,7 @@ def main() -> int:
         else:
             print(f"no results under {results}; prose checks skipped")
 
-    #, 3. links --------------------------------------------------------
+    # -- 3. links --------------------------------------------------------
     for document in list(DOCUMENTS) + sorted((ROOT / "docs").glob("*.md")):
         for target in check_links(document):
             problems.append(f"{document.relative_to(ROOT)}: broken link {target}")

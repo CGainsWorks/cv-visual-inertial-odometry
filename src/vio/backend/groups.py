@@ -76,8 +76,7 @@ class ReprojectionGroup(FactorGroup):
         self._pose_index: dict = {}
         self._pose_of: list = []
 
-    #, construction ------------------------------------------------------
-
+    # -- construction ------------------------------------------------------
     def add(self, pose_key, point_key, measurement) -> None:
         if pose_key not in self._pose_index:
             self._pose_index[pose_key] = len(self._pose_keys)
@@ -95,8 +94,7 @@ class ReprojectionGroup(FactorGroup):
     def rows(self) -> int:
         return 2 * len(self._point_keys)
 
-    #, evaluation --------------------------------------------------------
-
+    # -- evaluation --------------------------------------------------------
     def _geometry(self, values):
         pose_of = np.asarray(self._pose_of, dtype=int)
         R = np.stack([values[k].value.R for k in self._pose_keys])

@@ -65,8 +65,7 @@ class Pose:
         self.R = np.asarray(self.R, dtype=float).reshape(3, 3)
         self.t = np.asarray(self.t, dtype=float).reshape(3)
 
-    #, construction ------------------------------------------------------
-
+    # -- construction ------------------------------------------------------
     @staticmethod
     def identity() -> "Pose":
         return Pose(np.eye(3), np.zeros(3))
@@ -82,8 +81,7 @@ class Pose:
         M[:3, 3] = self.t
         return M
 
-    #, group operations --------------------------------------------------
-
+    # -- group operations --------------------------------------------------
     def inverse(self) -> "Pose":
         Rt = self.R.T
         return Pose(Rt, -Rt @ self.t)
@@ -108,8 +106,7 @@ class Pose:
         A[3:, 3:] = self.R
         return A
 
-    #, manifold operations ----------------------------------------------
-
+    # -- manifold operations ----------------------------------------------
     def retract(self, xi: np.ndarray) -> "Pose":
         """Right-multiplicative update, the one the optimiser applies."""
         out = self * exp(xi)

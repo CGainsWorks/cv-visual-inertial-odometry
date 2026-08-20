@@ -208,7 +208,7 @@ def main() -> int:
     # because the gap between the two is the point.
     keyframe_recall = len(detected & opportunities) / max(len(opportunities), 1)
 
-    #, the effect ------------------------------------------------------
+    # -- the effect ------------------------------------------------------
     before_times, before_poses = est.poses(initialised_only=est_cfg.use_imu)
     mode = "se3" if est_cfg.use_imu else "sim3"
     before = ate(before_times, before_poses, gt_times, gt_poses, mode=mode)

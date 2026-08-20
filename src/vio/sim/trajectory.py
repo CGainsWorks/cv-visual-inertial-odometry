@@ -81,8 +81,7 @@ class Trajectory:
         #: the tests that want a strictly bounded rotation vector.
         self.yaw_rate = float(yaw_rate)
 
-    #, translation -------------------------------------------------------
-
+    # -- translation -------------------------------------------------------
     def p(self, t: float) -> np.ndarray:
         return self.position.value(t)
 
@@ -93,8 +92,7 @@ class Trajectory:
         """World-frame acceleration, gravity *not* included."""
         return self.position.second_derivative(t)
 
-    #, rotation ----------------------------------------------------------
-
+    # -- rotation ----------------------------------------------------------
     def rotvec(self, t: float) -> np.ndarray:
         r = self.rotation.value(t)
         if self.yaw_rate:
@@ -114,8 +112,7 @@ class Trajectory:
         """Angular rate in the body frame, which is what a gyroscope reads."""
         return so3.right_jacobian(self.rotvec(t)) @ self.rotvec_dot(t)
 
-    #, combined ----------------------------------------------------------
-
+    # -- combined ----------------------------------------------------------
     def pose(self, t: float) -> Pose:
         return Pose(self.R(t), self.p(t))
 

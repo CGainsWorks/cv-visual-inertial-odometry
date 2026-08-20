@@ -238,12 +238,14 @@ accuracy change smaller than the run-to-run spread. Only the inertial factors
 are marginalised now, which is an approximation and is named as one.
 [§7](docs/results.md#7-back-end)
 
-**The gyroscope-predicted tracking guess buys nothing at 20 Hz.** It halves the
-initial guess error, from 5.4 px to 2.1 px on V1_01, and gains exactly zero
-tracked features, because a twelve-pixel displacement is already inside a 21x21
-search window. It starts paying below about 7 Hz. It is off by default and the
-frame-rate table is kept, because the conclusion is a property of this dataset
-rather than of the idea.
+**The gyroscope-predicted tracking guess buys nothing at 20 Hz.** It more than
+halves the initial guess error, from 11.6 px to 5.3 px on V1_02, and gains
+exactly zero tracked features, because the displacement is already inside a
+21x21 window at the top of a four-level pyramid. Decimating the stream shows
+where it starts to pay: +2.2 per cent of tracked features at 10 Hz, +5.7 at
+6.7 Hz, +12.2 at 2.5 Hz. It is off by default and the frame-rate table is
+kept, because the conclusion is a property of this dataset's frame rate rather
+than of the idea.
 [§6](docs/results.md#6-gyroscope-predicted-feature-tracking)
 
 **Descriptors computed where a landmark projects match nothing.** Loop

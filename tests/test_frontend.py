@@ -146,12 +146,13 @@ def test_triangulation_rejects_insufficient_parallax(two_views):
 
 
 def test_triangulation_rejects_points_behind_the_camera(two_views):
+    """Two identical bearings triangulate to a point at infinity or behind."""
     _, poses = two_views
-    behind = np.array([0.0, 0.0, -1.0])
-    x0 = np.array([0.0, 0.0])
-    _, ok = G.triangulate_two_view(poses[0], poses[10], x0, x0, min_angle_deg=0.0)
+    centre = np.array([0.0, 0.0])
+    _, ok = G.triangulate_two_view(
+        poses[0], poses[10], centre, centre, min_angle_deg=0.0
+    )
     assert not ok
-    del behind
 
 
 def test_triangulation_needs_two_views():

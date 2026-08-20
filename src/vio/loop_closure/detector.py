@@ -125,8 +125,7 @@ class LoopDetector:
         self._pending: dict = {}
         self._last_closure = -10 ** 9
 
-    #, population --------------------------------------------------------
-
+    # -- population --------------------------------------------------------
     def describe(self, image: np.ndarray, landmark_uv=None, landmark_points_cam=None):
         """ORB features for retrieval, and which of them have a 3-D position.
 
@@ -175,8 +174,7 @@ class LoopDetector:
             self.index.setdefault(word, set()).add(record.kf_id)
         return record
 
-    #, retrieval ---------------------------------------------------------
-
+    # -- retrieval ---------------------------------------------------------
     def candidates(self, kf_id: int):
         """Scored, temporally filtered candidates for a keyframe."""
         cfg = self.cfg

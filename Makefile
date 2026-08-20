@@ -133,6 +133,12 @@ plots:  ## Regenerate every figure in docs/plots
 tables:  ## Rewrite the README and docs/results.md tables from $(RESULTS)
 	$(PYTHON) scripts/make_tables.py --results $(RESULTS)
 
+.PHONY: publish
+publish:  ## Copy the result records into results/published, which is committed
+	@mkdir -p $(RESULTS)/published
+	@cp $(RESULTS)/*.json $(RESULTS)/published/ 2>/dev/null || true
+	@ls $(RESULTS)/published/*.json | wc -l | xargs echo "records published:"
+
 .PHONY: docs-check
 docs-check:  ## Do the documents still agree with the results they quote?
 	$(PYTHON) scripts/check_docs.py --results $(RESULTS)

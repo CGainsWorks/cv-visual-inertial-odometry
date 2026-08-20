@@ -17,8 +17,8 @@ Odometry*, T-RO 2017, with right perturbation throughout to match
 :mod:`vio.geometry.so3`.
 
 Two integration schemes are implemented, and the difference between them is
-measured rather than asserted, ``make integration-order`` regenerates the
-table in ``docs/results.md``.
+measured rather than asserted: ``scripts/ablate.py --only integration``
+regenerates the table in ``docs/results.md``.
 
 ``euler``
     The scheme written in the paper: every interval uses the measurement at its
@@ -92,8 +92,7 @@ class Preintegrated:
 
     n_samples: int = 0
 
-    #, accumulation ------------------------------------------------------
-
+    # -- accumulation ------------------------------------------------------
     def integrate_step(
         self,
         dt: float,
@@ -133,7 +132,7 @@ class Preintegrated:
         # the interval, then averaged.  Rotating both by R0 is the mistake.
         a_bar = 0.5 * (R0 @ a0 + R1 @ a1)
 
-        #, covariance ----------------------------------------------------
+        # -- covariance ----------------------------------------------------
         # Propagated with the Forster structure evaluated at the averaged
         # measurement.  The midpoint rule reduces the *variance* of the
         # effective interval measurement, and consecutive intervals share an
@@ -157,7 +156,7 @@ class Preintegrated:
         meas_cov, _ = self.noise.discrete(dt)
         self.cov = A @ self.cov @ A.T + B @ meas_cov @ B.T
 
-        #, bias Jacobians ------------------------------------------------
+        # -- bias Jacobians ------------------------------------------------
         # d(a_bar)/d(b_gyro) and d(a_bar)/d(b_acc) for the midpoint update.
         # Perturbing b_gyro by delta rotates R0 by Exp(J_R_bg delta) and turns
         # dR_k by Exp(-Jr_k delta dt), so both terms appear.
@@ -173,7 +172,7 @@ class Preintegrated:
         self.J_v_bg = self.J_v_bg + d_abar_dbg * dt
         self.J_R_bg = dR_k.T @ self.J_R_bg - Jr_k * dt
 
-        #, the deltas ----------------------------------------------------
+        # -- the deltas ----------------------------------------------------
         self.dp = self.dp + self.dv * dt + 0.5 * a_bar * dt * dt
         self.dv = self.dv + a_bar * dt
         self.dR = so3.project(R1)
@@ -210,8 +209,7 @@ class Preintegrated:
             self.integrate_step(tb - ta, a0, w0, a1, w1)
         return self
 
-    #, use ---------------------------------------------------------------
-
+    # -- use ---------------------------------------------------------------
     def corrected(self, bias: ImuBias):
         """The deltas moved to a new bias by the first-order correction."""
         db = np.asarray(bias.vector() - self.bias_ref.vector(), dtype=float)
@@ -282,8 +280,7 @@ class Preintegrated:
             out.integrate_step(dt, a0, w0, a1, w1, record=False)
         return out
 
-    #, weighting ---------------------------------------------------------
-
+    # -- weighting ---------------------------------------------------------
     def information(self) -> np.ndarray:
         """Inverse covariance, ridged so a one-sample block cannot blow up."""
         C = self.cov + np.eye(9) * 1e-12

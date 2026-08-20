@@ -120,8 +120,7 @@ class Vocabulary:
         self.descriptor_bytes = 32
         self.trained_on: list = []
 
-    #, training ----------------------------------------------------------
-
+    # -- training ----------------------------------------------------------
     def train(self, descriptors: np.ndarray, seed: int = 0,
               max_descriptors: int = 400_000) -> "Vocabulary":
         """Build the tree from a pile of descriptors."""
@@ -162,8 +161,7 @@ class Vocabulary:
             idf = np.log(max(n_documents, 1) / np.maximum(counts, 1e-9))
         self.idf = np.where(counts > 0, idf, 0.0)
 
-    #, use ---------------------------------------------------------------
-
+    # -- use ---------------------------------------------------------------
     def words(self, descriptors: np.ndarray) -> np.ndarray:
         """Word index for each descriptor."""
         data = np.atleast_2d(np.asarray(descriptors, dtype=np.uint8))
@@ -206,8 +204,7 @@ class Vocabulary:
                 total += abs(va) + abs(vb) - abs(va - vb)
         return float(0.5 * total)
 
-    #, persistence -------------------------------------------------------
-
+    # -- persistence -------------------------------------------------------
     def save(self, path) -> Path:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)

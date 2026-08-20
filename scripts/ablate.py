@@ -187,7 +187,7 @@ def ablate_backend(args) -> dict:
     """Two claims: the group is faster, and marginalisation matters."""
     out = {}
 
-    #, speed of the vectorised group -----------------------------------
+    # -- speed of the vectorised group -----------------------------------
     rng = np.random.default_rng(4)
     camera = simulate(SimConfig(duration=0.2, seed=0)).config.camera
     T_bc = Pose(se3.exp(np.array([0.1, -0.2, 1.5, 0.0, 0.0, 0.0])).R,
@@ -232,7 +232,7 @@ def ablate_backend(args) -> dict:
     print(f"  they agree to   {out['group']['max_jacobian_difference']:.2e} "
           f"in the Jacobian")
 
-    #, marginalisation -------------------------------------------------
+    # -- marginalisation -------------------------------------------------
     seq = simulate(SimConfig(duration=args.duration, n_landmarks=1200,
                              pixel_noise=0.4, seed=21))
     renderer = SceneRenderer(seq, noise_sigma=2.0)
@@ -316,7 +316,6 @@ def ablate_initialisation(args) -> dict:
     opposite, and says it loudly, so the argument is preserved here as a table
     rather than as an assertion.
     """
-    from vio.geometry import Pose
     from vio.imu.initialisation import initialise
     from vio.types import GRAVITY
 
@@ -360,7 +359,6 @@ def ablate_initialisation(args) -> dict:
                       f"{rows[-1]['scale_error_percent']:9.2f}% "
                       f"{angle:8.3f}d {rows[-1]['bias_error']:9.3f} "
                       f"{r.condition_number:10.1f}")
-    del Pose
     return {"rows": rows}
 
 

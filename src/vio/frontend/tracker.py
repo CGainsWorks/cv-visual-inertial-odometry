@@ -15,28 +15,28 @@ started as.  KLT begins its search at the feature's previous pixel position,
 which is a poor guess when the camera is rotating fast.  Because this is a
 *visual-inertial* system there is a gyroscope available, so integrating it
 across the frame interval predicts where each feature will land, up to
-translation parallax.  Measured on EuRoC, that prediction does halve the
-initial guess error, 5.4 px to 2.1 px on V1_01, 11.6 px to 5.3 px on V1_02 --
-but it buys **no additional tracked features at all** at the native 20 fps,
-because a 12-pixel displacement is already comfortably inside a 21x21 window at
-the top of a four-level pyramid.  Decimating the stream to simulate faster
-motion shows where it starts to pay:
+translation parallax.  Measured on EuRoC, that prediction does more than
+halve the initial guess error, 11.6 px to 5.3 px on V1_02, but it buys **no
+additional tracked features at all** at the native 20 fps, because the
+displacement is already comfortably inside a 21x21 window at the top of a
+four-level pyramid.  Decimating the stream to simulate faster motion shows
+where it starts to pay:
 
 ===========  =========  ==================  ==============  ======
 stride       eff. fps   tracked, no gyro    with gyro       gain
 ===========  =========  ==================  ==============  ======
 1            20.0       151.2               151.3           +0.0%
-2            10.0       116.0               117.6           +1.4%
-3             6.7        93.4                97.7           +4.6%
-5             4.0        69.6                76.0           +9.2%
-8             2.5        52.0                57.3          +10.1%
+2            10.0       115.2               117.7           +2.2%
+3             6.7        93.7                99.1           +5.7%
+5             4.0        70.7                78.1          +10.4%
+8             2.5        53.3                59.8          +12.2%
 ===========  =========  ==================  ==============  ======
 
-So it is off by default: on this dataset it costs about 25% of the front end's
-runtime and returns nothing.  It is kept, and kept tested, because the
+So it is off by default: on this dataset it costs about a quarter of the front
+end's runtime and returns nothing.  It is kept, and kept tested, because the
 conclusion is a property of EuRoC's frame rate rather than of the idea, and a
-rolling-shutter phone camera at 5 fps would want it on.  ``make ablate-frontend``
-regenerates that table.
+rolling-shutter phone camera at 5 fps would want it on.
+``scripts/ablate.py --only frontend`` regenerates that table.
 """
 
 from __future__ import annotations
@@ -148,8 +148,7 @@ class Tracker:
         self._prev_stamp = None
         self.frame_index = -1
 
-    #, main entry point --------------------------------------------------
-
+    # -- main entry point --------------------------------------------------
     def process(
         self,
         image: np.ndarray,
@@ -214,8 +213,7 @@ class Tracker:
             ok=len(ids) >= cfg.min_tracks,
         )
 
-    #, internals ---------------------------------------------------------
-
+    # -- internals ---------------------------------------------------------
     def _predict(self, gyro_rotation) -> np.ndarray:
         """Where the previous features should land, given the gyro rotation."""
         prev = self._prev_uv.astype(np.float64)
@@ -317,8 +315,7 @@ class Tracker:
             return np.zeros((0, 2), dtype=np.float32)
         return pts.reshape(-1, 2)
 
-    #, housekeeping ------------------------------------------------------
-
+    # -- housekeeping ------------------------------------------------------
     def prune(self, before_frame: int) -> int:
         """Drop tracks last seen before ``before_frame``.
 

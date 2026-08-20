@@ -79,8 +79,8 @@ class SimConfig:
     #: blobs, about six pixels at 20 Hz, which is what EuRoC's own sequences
     #: do.  An earlier version of these defaults produced seventeen pixels per
     #: frame, past half the blob spacing, and the tracker mismatched
-    #: neighbouring blobs on almost every feature.  ``make sim-check``
-    #: regenerates the number.
+    #: neighbouring blobs on almost every feature.  The assertion in
+    #: ``tests/test_io_and_sim.py`` keeps it in range.
     room: tuple = (8.5, 7.0, 3.4)
 
     imu_noise: ImuNoise = field(default_factory=ImuNoise)
@@ -230,7 +230,7 @@ def simulate(config: SimConfig | None = None) -> SimSequence:
     rng = np.random.default_rng(cfg.seed)
     tr = cfg.trajectory
 
-    #, IMU ---------------------------------------------------------------
+    # -- IMU ---------------------------------------------------------------
     dt = 1.0 / cfg.imu_rate
     # A little lead-in and lead-out so every camera frame has IMU either side
     # of it even after the time offset is applied.
@@ -265,10 +265,10 @@ def simulate(config: SimConfig | None = None) -> SimSequence:
     )
     imu = ImuData(t_imu, acc, gyro)
 
-    #, landmarks ---------------------------------------------------------
+    # -- landmarks ---------------------------------------------------------
     landmarks = _scatter_on_room_faces(rng, cfg.n_landmarks, cfg.room)
 
-    #, camera frames -----------------------------------------------------
+    # -- camera frames -----------------------------------------------------
     stamps = np.arange(0.0, cfg.duration + 1e-9, 1.0 / cfg.cam_rate)
     frames = []
     states = []
