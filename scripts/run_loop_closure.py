@@ -4,11 +4,19 @@
 Two questions, answered separately, because they are separate:
 
 **Was the detector right?**  Every emitted closure is labelled against ground
-truth, two keyframes are genuinely the same place if their true positions are
+truth: two keyframes are genuinely the same place if their true positions are
 within ``--radius`` metres and their true viewing directions within
 ``--bearing`` degrees.  Precision is what fraction of emitted closures were
-genuine.  Recall is over *revisit opportunities*, the pairs that satisfy the
-same test and are far enough apart in time to count.
+genuine.
+
+Recall is over **revisit episodes**, not keyframe pairs, and the distinction is
+not pedantry.  On V1_02 there are 1356 keyframes in a room a few metres across,
+so 1347 of them have some earlier keyframe within 1.5 m; counted that way a
+detector that closes the loop cleanly once per pass through the room scores
+0.005 and looks broken.  An episode is a contiguous stretch of keyframes
+revisiting the same place, and it counts as detected if *any* keyframe in it
+produced a verified closure, which is what the pose graph needs: a second
+closure over the same stretch adds almost nothing.
 
 **Did closing the loops help?**  ATE before and after the pose graph, from the
 same run.  This is the number the brief asks for and it is the one that can
@@ -45,6 +53,32 @@ from vio.pipeline.estimator import Estimator, EstimatorConfig  # noqa: E402
 DEFAULT_DATA = Path(
     os.environ.get("EUROC_ROOT", Path.home() / "datasets" / "euroc" / "sequences")
 )
+
+
+def revisit_episodes(pairs, gap: int = 5):
+    """Group revisit pairs into episodes: contiguous stretches of the same place.
+
+    Two pairs belong to the same episode when both their query and their match
+    keyframes are close together, so a single pass back through a room counts
+    once rather than a hundred times.
+    """
+    episodes = []
+    for query, match in sorted(pairs):
+        placed = False
+        for episode in episodes:
+            near_query = query - episode["query_end"] <= gap
+            near_match = abs(match - episode["match_end"]) <= gap * 3
+            if near_query and near_match:
+                episode["queries"].add(query)
+                episode["query_end"] = max(episode["query_end"], query)
+                episode["match_end"] = match
+                placed = True
+                break
+        if not placed:
+            episodes.append({
+                "queries": {query}, "query_end": query, "match_end": match,
+            })
+    return episodes
 
 
 def revisit_pairs(ids, stamps, gt_times, gt_poses, radius, bearing_deg, min_gap):
@@ -154,6 +188,7 @@ def main() -> int:
     pairs, gt_by_kf = revisit_pairs(
         ids, stamps, gt_times, gt_poses, args.radius, args.bearing, args.min_gap
     )
+    episodes = revisit_episodes(pairs)
     opportunities = {a for a, _ in pairs} | {b for _, b in pairs}
 
     correct, wrong = [], []
@@ -166,8 +201,12 @@ def main() -> int:
         (correct if distance <= args.radius else wrong).append((c, distance))
 
     precision = len(correct) / max(len(est.closures), 1)
-    detected_places = {c.query_id for c, _ in correct}
-    recall = len(detected_places & opportunities) / max(len(opportunities), 1)
+    detected = {c.query_id for c, _ in correct}
+    hit = sum(1 for e in episodes if e["queries"] & detected)
+    recall = hit / max(len(episodes), 1)
+    # Kept alongside because it is the number a reader might expect, and
+    # because the gap between the two is the point.
+    keyframe_recall = len(detected & opportunities) / max(len(opportunities), 1)
 
     #, the effect ------------------------------------------------------
     before_times, before_poses = est.poses(initialised_only=est_cfg.use_imu)
@@ -203,10 +242,13 @@ def main() -> int:
         "wall_seconds": round(elapsed, 1),
         "keyframes": len(ids),
         "revisit_opportunities": len(opportunities),
+        "revisit_episodes": len(episodes),
+        "episodes_detected": hit,
         "closures_emitted": len(est.closures),
         "closures_correct": len(correct),
         "precision": round(precision, 4),
         "recall": round(recall, 4),
+        "keyframe_recall": round(keyframe_recall, 4),
         "closures": [
             {"query": c.query_id, "match": c.match_id, "score": round(c.score, 4),
              "inliers": c.n_inliers, "matches": c.n_matches,
@@ -231,9 +273,11 @@ def main() -> int:
     path.write_text(json.dumps(record, indent=2, default=float), encoding="utf-8")
 
     print(f"\n{name} [{args.mode}] {len(ids)} keyframes, {elapsed:.0f} s")
-    print(f"  revisit opportunities {len(opportunities)}, "
-          f"closures {len(est.closures)} ({len(correct)} correct)")
-    print(f"  precision {precision:.3f}   recall {recall:.3f}")
+    print(f"  revisit episodes {len(episodes)} ({len(opportunities)} keyframes "
+          f"have a partner), closures {len(est.closures)} "
+          f"({len(correct)} correct)")
+    print(f"  precision {precision:.3f}   episode recall {recall:.3f} "
+          f"({hit}/{len(episodes)})   keyframe recall {keyframe_recall:.3f}")
     print(f"  ATE before {before.translation.rmse:.4f} m")
     if after is not None:
         change = 100.0 * (after.translation.rmse - before.translation.rmse) \

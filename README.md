@@ -23,10 +23,9 @@ the true scale, score the visual-inertial result rigidly, and put the two side
 by side.
 
 <!-- table:headline -->
-Across the eight EuRoC sequences the visual-inertial configuration reaches a
-mean absolute trajectory error of **0.000 m** under rigid alignment and
-recovers metric scale to within **0.0 per cent**, at about **0 ms per frame**
-on one core.
+Across the 7 EuRoC sequences the visual-inertial configuration reaches a
+mean absolute trajectory error of **0.718 m** under rigid alignment and
+recovers metric scale to within **4.7 per cent**.  Runtime is measured separately by `make timing`, because these runs shared the machine.
 <!-- /table:headline -->
 
 ### What it looks like
@@ -49,7 +48,7 @@ on one core.
 | **Initialisation** | Gyroscope bias from rotation alone, then a linear solve for gravity, metric scale and per-keyframe velocity, then a tangent-plane refinement enforcing the gravity magnitude. Refuses when scale is unobservable |
 | **Loop closure** | Vocabulary tree over ORB descriptors trained by binary k-means, TF-IDF inverted index, DBoW2 scoring, geometric verification by PnP under RANSAC, four-degree-of-freedom pose graph |
 | **Calibration** | Camera-IMU rotation by orthogonal Procrustes on rotation increments; time offset by angular-rate correlation with sub-frame interpolation, plus a feature-velocity refinement |
-| **Evaluation** | ATE, RPE over distance intervals, Umeyama alignment with and without scale, drift per metre, all written out and cross-checked against `evo` to 1e-9 |
+| **Evaluation** | ATE, RPE over distance intervals, Umeyama alignment with and without scale, drift per metre, all written out and cross-checked against `evo`: 26 of 30 comparisons agree to 1.8e-15 m |
 | **Simulator** | Analytic trajectory with exact derivatives, IMU measurement generation, a textured renderer, and an ASL-format writer so the real dataset loader can be tested against known values |
 | **Reporting** | One pass per sequence, no per-sequence tuning; every table regenerated from the result files by `make tables`, and `make docs-check` fails if a document has drifted |
 
@@ -95,7 +94,17 @@ Full tables, both alignments, every sequence: **[docs/results.md](docs/results.m
 Monocular, `cam0` only, one pass per sequence, no per-sequence tuning.
 
 <!-- table:euroc -->
-_No results yet. Run `make experiments`._
+| sequence | length | VIO ATE (m) | VIO scale err | VIO rot (deg) | VO ATE, sim3 (m) | VO scale |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `MH_01_easy` | 81 m | **0.971** | 4.9% | 13.99 | 2.316 | 3.60x |
+| `MH_02_easy` | 73 m | **0.538** | 3.5% | 7.99 | 0.670 | 0.48x |
+| `MH_03_medium` | 131 m | n/a | n/a | n/a | 3.578 | 7.64x |
+| `MH_04_difficult` | 91 m | **1.391** | 4.7% | 11.80 | 6.792 | 2.72x |
+| `MH_05_difficult` | 97 m | **1.118** | 1.4% | 20.13 | 2.372 | 0.86x |
+| `V1_01_easy` | 58 m | **0.271** | 3.7% | 10.13 | 1.109 | 2.37x |
+| `V1_02_medium` | 76 m | **0.301** | 6.8% | 11.29 | 1.135 | 0.23x |
+| `V1_03_difficult` | 78 m | **0.439** | 7.6% | 11.42 | 1.519 | 2.00x |
+| **mean** | | **0.718** | 4.7% | 12.39 | 2.436 | |
 <!-- /table:euroc -->
 
 Relative pose error and drift, measured over fixed *distance* intervals rather
@@ -103,13 +112,22 @@ than fixed time, because a platform that hovers accumulates time but not error
 and a time-based figure rewards it for that:
 
 <!-- table:drift -->
-_No results yet. Run `make experiments`._
+| sequence | distance | VIO RPE over 1 m | VIO drift | VO RPE over 1 m | VO drift |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `MH_01_easy` | 81 m | 0.1423 m | 4.21 %/m | 0.5163 m | 8.09 %/m |
+| `MH_02_easy` | 73 m | 0.0973 m | 1.51 %/m | 0.1491 m | 2.45 %/m |
+| `MH_03_medium` | 131 m | n/a | n/a | 0.9500 m | 2.42 %/m |
+| `MH_04_difficult` | 91 m | 0.1002 m | 2.28 %/m | 1.1300 m | 4.38 %/m |
+| `MH_05_difficult` | 97 m | 0.1140 m | 2.41 %/m | 0.3359 m | 3.52 %/m |
+| `V1_01_easy` | 58 m | 0.1067 m | 0.70 %/m | 0.5149 m | 1.79 %/m |
+| `V1_02_medium` | 76 m | 0.0917 m | 0.29 %/m | 0.5861 m | 1.73 %/m |
+| `V1_03_difficult` | 78 m | 0.1167 m | 0.29 %/m | 0.7880 m | 1.91 %/m |
 <!-- /table:drift -->
 
 **Runtime, and the thing this does not do.**
 
 <!-- table:timing -->
-_No results yet. Run `make experiments`._
+_No uncontended timing runs yet.  `make experiments` runs in parallel, which inflates milliseconds per frame; run `make timing` for the honest figures._
 <!-- /table:timing -->
 
 This is not a real-time system and nothing here claims it is. A 20 Hz camera
@@ -260,21 +278,26 @@ and what the trap in it is.
 ## Loop closure
 
 <!-- table:loop -->
-_No loop-closure runs yet. Run `make loop`._
+| sequence | revisit episodes | closures | correct | precision | episode recall | ATE before | ATE after |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `V1_02_medium` | n/a | 7 | 7 | 1.00 | 0.01 | 0.306 m | **0.239 m** (-22%) |
 <!-- /table:loop -->
 
 The vocabulary is trained on **Machine Hall 01 and 02 only** and evaluated
-elsewhere; the training set is recorded inside the vocabulary file. Precision
-is over emitted closures, recall over revisit opportunities, where a revisit is
-a keyframe pair that ground truth places within 1.5 m of each other, facing
-within 45 degrees, at least 30 keyframes apart. The two questions, whether the
-detector was right and whether closing the loops helped, are reported
-separately because they are separate.
+elsewhere; the training set is recorded inside the vocabulary file. A revisit
+is a keyframe pair that ground truth places within 1.5 m of each other, facing
+within 45 degrees, at least 30 keyframes apart. Recall is counted over revisit
+*episodes*, contiguous stretches of such keyframes, because counting pairs in a
+room a few metres across makes a detector that closes the loop cleanly once per
+pass look broken. The two questions, whether the detector was right and whether
+closing the loops helped, are reported separately because they are separate.
 
 ## Camera-IMU calibration
 
 <!-- table:calibration -->
-_No calibration runs yet. Run `make calibrate`._
+| sequence | rotation error | Procrustes residual | offset injected | offset recovered | error | correlation |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `V1_01_easy` | 1.857 deg | 2.1e-02 rad | +0.0 ms | -7.0 ms | -6.98 ms | 0.627 |
 <!-- /table:calibration -->
 
 The rotation is recovered from rotation alone and compared against EuRoC's
@@ -296,7 +319,10 @@ linearisation points. The preintegration is checked against an analytic
 trajectory, so the reference has no integration error of its own to hide
 behind, and its covariance against a Monte Carlo. The vectorised factor group
 is checked against the scalar factors it replaces. The trajectory metrics are
-checked against `evo`. The dataset loader is checked by writing a simulated
+checked against `evo`: 26 of the 30 comparisons agree to 1.8e-15 m, and the
+four that do not are all one sequence where a single estimate sits exactly on
+the association boundary, which `make evo-check` reports as a tie-break rather
+than an error. The dataset loader is checked by writing a simulated
 sequence out in ASL format and reading it back, so every field has a value the
 test already knows.
 

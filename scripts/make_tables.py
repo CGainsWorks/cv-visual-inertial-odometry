@@ -82,21 +82,35 @@ def _rows(runs: dict):
 
 
 def table_headline(runs: dict) -> str:
-    """The two sentences at the top of the README, generated like any table."""
+    """The sentences at the top of the README, generated like any table.
+
+    Accuracy is averaged over every sequence.  The runtime figure is averaged
+    only over runs that had the machine to themselves, because a parallel sweep
+    reads far slower per frame and quoting that as the system's speed would be
+    wrong in a direction that flatters nobody.
+    """
     rows = [r["vio"] for r in _rows(runs) if "vio" in r]
     if not rows:
-        return ("_No results yet.  Run `make experiments`, then `make tables`._")
+        return "_No results yet.  Run `make experiments`, then `make tables`._"
     ate = np.mean([r["ate"] for r in rows])
     scale = np.mean([100.0 * abs(r["scale"] - 1.0) for r in rows])
-    ms = np.mean([r["ms"] for r in rows])
-    return "\n".join([
+
+    solo = [
+        runs[name]["vio"]["timing"]["ms_per_frame"]
+        for name in runs
+        if "vio" in runs[name] and (runs[name]["vio"].get("workers") or 99) <= 1
+    ]
+    if solo:
+        speed = f", at about **{np.mean(solo):.0f} ms per frame** on one core."
+    else:
+        speed = (".  Runtime is measured separately by `make timing`, because "
+                 "these runs shared the machine.")
+    return LINE_BREAK.join([
         f"Across the {len(rows)} EuRoC sequences the visual-inertial "
         "configuration reaches a",
         f"mean absolute trajectory error of **{ate:.3f} m** under rigid "
         "alignment and",
-        f"recovers metric scale to within **{scale:.1f} per cent**, at about "
-        f"**{ms:.0f} ms per frame**",
-        "on one core.",
+        f"recovers metric scale to within **{scale:.1f} per cent**{speed}",
     ])
 
 
@@ -162,7 +176,7 @@ def table_timing(runs: dict) -> str:
     rows = []
     for name in sorted(runs):
         record = runs[name].get("vio")
-        if record is None or record.get("workers", 1) > 1:
+        if record is None or (record.get("workers") or 99) > 1:
             continue
         t = record["timing"]
         share = t["keyframes"] / max(t["frames"], 1)
@@ -325,19 +339,21 @@ def table_loop(runs: dict, ablations: dict, results: Path) -> str:
     if not rows:
         return "_No loop-closure runs yet.  Run `make loop`._"
     lines = [
-        "| sequence | revisits | closures | correct | precision | recall "
-        "| ATE before | ATE after |",
+        "| sequence | revisit episodes | closures | correct | precision "
+        "| episode recall | ATE before | ATE after |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for r in rows:
         before = r["ate_before"]["ate_translation_m"]["rmse"]
         after = (r["ate_after"]["ate_translation_m"]["rmse"]
                  if r.get("ate_after") else None)
+        change = ("" if after is None else
+                  f"{100 * (after - before) / max(before, 1e-12):+.0f}%")
         lines.append(
-            f"| `{r['sequence']}` | {r['revisit_opportunities']} | "
+            f"| `{r['sequence']}` | {r.get('revisit_episodes', 'n/a')} | "
             f"{r['closures_emitted']} | {r['closures_correct']} | "
             f"{r['precision']:.2f} | {r['recall']:.2f} | {before:.3f} m | "
-            + (f"**{after:.3f} m** |" if after is not None else "n/a |")
+            + (f"**{after:.3f} m** ({change}) |" if after is not None else "n/a |")
         )
     return "\n".join(lines)
 

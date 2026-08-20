@@ -28,7 +28,15 @@ seconds in; see [limitations.md](limitations.md).
 <!-- table:euroc -->
 | sequence | length | VIO ATE (m) | VIO scale err | VIO rot (deg) | VO ATE, sim3 (m) | VO scale |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `MH_03_medium` | 131 m | ,  | ,  | ,  | 3.578 | 7.64x |
+| `MH_01_easy` | 81 m | **0.971** | 4.9% | 13.99 | 2.316 | 3.60x |
+| `MH_02_easy` | 73 m | **0.538** | 3.5% | 7.99 | 0.670 | 0.48x |
+| `MH_03_medium` | 131 m | n/a | n/a | n/a | 3.578 | 7.64x |
+| `MH_04_difficult` | 91 m | **1.391** | 4.7% | 11.80 | 6.792 | 2.72x |
+| `MH_05_difficult` | 97 m | **1.118** | 1.4% | 20.13 | 2.372 | 0.86x |
+| `V1_01_easy` | 58 m | **0.271** | 3.7% | 10.13 | 1.109 | 2.37x |
+| `V1_02_medium` | 76 m | **0.301** | 6.8% | 11.29 | 1.135 | 0.23x |
+| `V1_03_difficult` | 78 m | **0.439** | 7.6% | 11.42 | 1.519 | 2.00x |
+| **mean** | | **0.718** | 4.7% | 12.39 | 2.436 | |
 <!-- /table:euroc -->
 
 The visual-only column is the point of the comparison.  Its trajectory *shape*
@@ -51,7 +59,14 @@ figure rewards it for that.
 <!-- table:drift -->
 | sequence | distance | VIO RPE over 1 m | VIO drift | VO RPE over 1 m | VO drift |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `MH_03_medium` | 131 m | ,  | ,  | 0.9500 m | 2.42 %/m |
+| `MH_01_easy` | 81 m | 0.1423 m | 4.21 %/m | 0.5163 m | 8.09 %/m |
+| `MH_02_easy` | 73 m | 0.0973 m | 1.51 %/m | 0.1491 m | 2.45 %/m |
+| `MH_03_medium` | 131 m | n/a | n/a | 0.9500 m | 2.42 %/m |
+| `MH_04_difficult` | 91 m | 0.1002 m | 2.28 %/m | 1.1300 m | 4.38 %/m |
+| `MH_05_difficult` | 97 m | 0.1140 m | 2.41 %/m | 0.3359 m | 3.52 %/m |
+| `V1_01_easy` | 58 m | 0.1067 m | 0.70 %/m | 0.5149 m | 1.79 %/m |
+| `V1_02_medium` | 76 m | 0.0917 m | 0.29 %/m | 0.5861 m | 1.73 %/m |
+| `V1_03_difficult` | 78 m | 0.1167 m | 0.29 %/m | 0.7880 m | 1.91 %/m |
 <!-- /table:drift -->
 
 Drift is the final absolute error divided by the distance travelled.  The mean
@@ -62,7 +77,7 @@ of hand.
 ## 3. Where the time goes
 
 <!-- table:timing -->
-_No results yet.  Run `make experiments`._
+_No uncontended timing runs yet.  `make experiments` runs in parallel, which inflates milliseconds per frame; run `make timing` for the honest figures._
 <!-- /table:timing -->
 
 These come from runs that had the machine to themselves.  The accuracy tables
@@ -88,7 +103,20 @@ not go away: it is absorbed by the scale and by the gravity direction, which
 are the two things the procedure exists to produce.
 
 <!-- table:initialisation -->
-_No ablation yet.  Run `make ablate`._
+| true bias | keyframes | solve for bias | scale error | gravity error | bias error | condition |
+| ---: | ---: | :---: | ---: | ---: | ---: | ---: |
+| 0.06 m/s2 | 12 | no | 8.54% | 0.48 deg | 0.062 m/s2 | 213 |
+| 0.06 m/s2 | 12 | yes | 0.76% | 0.19 deg | 0.039 m/s2 | 665 |
+| 0.06 m/s2 | 20 | no | 2.11% | 0.37 deg | 0.062 m/s2 | 167 |
+| 0.06 m/s2 | 20 | yes | 1.24% | 0.08 deg | 0.010 m/s2 | 195 |
+| 0.06 m/s2 | 30 | no | 7.78% | 0.46 deg | 0.062 m/s2 | 80 |
+| 0.06 m/s2 | 30 | yes | 1.39% | 0.15 deg | 0.020 m/s2 | 135 |
+| 0.55 m/s2 | 12 | no | 60.98% | 1.67 deg | 0.554 m/s2 | 200 |
+| 0.55 m/s2 | 12 | yes | 0.76% | 0.19 deg | 0.039 m/s2 | 665 |
+| 0.55 m/s2 | 20 | no | 5.91% | 3.22 deg | 0.554 m/s2 | 167 |
+| 0.55 m/s2 | 20 | yes | 1.24% | 0.08 deg | 0.010 m/s2 | 195 |
+| 0.55 m/s2 | 30 | no | 47.58% | 4.08 deg | 0.554 m/s2 | 87 |
+| 0.55 m/s2 | 30 | yes | 1.39% | 0.15 deg | 0.020 m/s2 | 135 |
 <!-- /table:initialisation -->
 
 The second bias in the table, 0.55 m/s^2, is not invented: it is what EuRoC's
@@ -100,7 +128,13 @@ Worst error over blocks of the given length, against an analytic trajectory so
 the reference has no integration error of its own.
 
 <!-- table:integration -->
-_No ablation yet.  Run `make ablate`._
+| block length | Euler position | midpoint position | Euler rotation | midpoint rotation |
+| ---: | ---: | ---: | ---: | ---: |
+| 0.05 s | 1.89e-06 m | 4.25e-08 m | 4.51e-06 rad | 1.73e-09 rad |
+| 0.10 s | 7.59e-06 m | 8.52e-08 m | 9.02e-06 rad | 3.45e-09 rad |
+| 0.25 s | 4.77e-05 m | 2.14e-07 m | 2.25e-05 rad | 8.63e-09 rad |
+| 0.50 s | 1.92e-04 m | 4.34e-07 m | 4.50e-05 rad | 1.72e-08 rad |
+| 1.00 s | 7.76e-04 m | 9.25e-07 m | 8.96e-05 rad | 3.43e-08 rad |
 <!-- /table:integration -->
 
 The scheme in Forster et al. uses the measurement at the start of each
@@ -149,13 +183,22 @@ elsewhere; the training set is recorded inside the vocabulary file.  A
 of each other, facing within 45 degrees, at least 30 keyframes apart.
 
 <!-- table:loop -->
-_No loop-closure runs yet.  Run `make loop`._
+| sequence | revisit episodes | closures | correct | precision | episode recall | ATE before | ATE after |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `V1_02_medium` | n/a | 7 | 7 | 1.00 | 0.01 | 0.306 m | **0.239 m** (-22%) |
 <!-- /table:loop -->
 
-Precision is over emitted closures, recall over revisit opportunities.  The two
-questions, whether the detector was right and whether closing the loops helped, are
-reported separately because they are separate: a detector with perfect
-precision buys nothing if the trajectory had not drifted enough for the
+Precision is over emitted closures.  Recall is over revisit *episodes*, meaning
+contiguous stretches of keyframes revisiting the same place, counted as detected
+if any keyframe in the stretch produced a verified closure.  Counting keyframe
+pairs instead is misleading in a small room: on V1_02 almost every one of 1356
+keyframes has an earlier keyframe within 1.5 m, so a detector that closes the
+loop cleanly once per pass scores 0.005 and looks broken.  Both numbers are in
+the JSON.
+
+The two questions, whether the detector was right and whether closing the loops
+helped, are reported separately because they are separate: a detector with
+perfect precision buys nothing if the trajectory had not drifted enough for the
 correction to matter.
 
 ## 10. Camera-IMU calibration
@@ -166,7 +209,9 @@ recovered from a deliberately injected one, so a routine that always returns
 zero fails rather than passes.
 
 <!-- table:calibration -->
-_No calibration runs yet.  Run `make calibrate`._
+| sequence | rotation error | Procrustes residual | offset injected | offset recovered | error | correlation |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `V1_01_easy` | 1.857 deg | 2.1e-02 rad | +0.0 ms | -7.0 ms | -6.98 ms | 0.627 |
 <!-- /table:calibration -->
 
 The extrinsic *translation* is not estimated from real sequences.  It is only
@@ -188,5 +233,4 @@ make vocabulary loop calibrate ablate
 make plots tables docs-check
 ```
 
-`make evo-check` then re-scores every trajectory file with `evo` and reports
-the disagreement with our own metrics, which in testing is at the 1e-9 level.
+`make evo-check` then re-scores every trajectory file with `evo`.  Twenty-six of the thirty comparisons agree to 1.8e-15 metres, which is round-off.  The remaining four are all MH_01, where exactly one estimate sits on the 20 ms association boundary: ours keeps it, evo does not, and the ATE differs by up to 2.2 mm on 3639 pairs against 3638.  `make evo-check` prints the comparison and distinguishes a tie-break from a genuine disagreement.

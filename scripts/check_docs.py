@@ -26,6 +26,8 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+
+import numpy as np
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,20 +56,27 @@ PROSE_CLAIMS = [
     (
         "headline runtime",
         "README.md",
-        r"about \*\*([0-9.]+) ms per frame\*\*",
-        lambda runs, res: _mean(runs, "vio", "ms"),
+        r"about \*\*([0-9.]+) ms per frame\*\* on one core",
+        lambda runs, res: _mean(runs, "vio", "ms", solo_only=True),
         1.0,
     ),
 ]
 
+#: Claims that are allowed to be absent, because the generator omits them when
+#: the results cannot support them.  The runtime sentence disappears entirely
+#: until there is an uncontended timing run to quote.
+OPTIONAL_CLAIMS = {"headline runtime"}
 
-def _mean(runs, mode, field):
+
+def _mean(runs, mode, field, solo_only: bool = False):
     import numpy as np
 
     values = []
     for name in runs:
         record = runs[name].get(mode)
         if record is None or not record.get("initialised", True):
+            continue
+        if solo_only and (record.get("workers") or 99) > 1:
             continue
         metrics = record["metrics"]
         alignment = "ate_se3" if mode == "vio" else "ate_sim3"
@@ -127,10 +136,17 @@ def main() -> int:
                 text = document.read_text(encoding="utf-8")
                 match = re.search(pattern, text)
                 if not match:
-                    problems.append(f"{doc_name}: claim '{label}' not found")
+                    if label not in OPTIONAL_CLAIMS:
+                        problems.append(f"{doc_name}: claim '{label}' not found")
                     continue
                 stated = float(match.group(1))
                 actual = extractor(runs, results)
+                if not np.isfinite(actual):
+                    problems.append(
+                        f"{doc_name}: '{label}' says {stated:g} but the results "
+                        f"support no value"
+                    )
+                    continue
                 if abs(stated - actual) > tolerance:
                     problems.append(
                         f"{doc_name}: '{label}' says {stated:g}, results give "
