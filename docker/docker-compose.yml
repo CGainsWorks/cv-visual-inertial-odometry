@@ -1,0 +1,22 @@
+services:
+  vio:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: cv-visual-inertial-odometry
+    # The default command needs no data at all: it generates a sequence,
+    # renders it and runs both configurations over it.
+    command: ["python", "scripts/demo.py"]
+    volumes:
+      - ../results:/app/results
+      # Uncomment to run on EuRoC instead of the generated sequence.
+      # - ${HOME}/datasets/euroc/sequences:/data:ro
+    # environment:
+    #   EUROC_ROOT: /data
+
+  test:
+    image: cv-visual-inertial-odometry
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["make", "check"]

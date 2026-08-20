@@ -1,0 +1,22 @@
+[flake8]
+max-line-length = 100
+extend-ignore =
+    E203,
+    W503,
+    E731,
+    # "#:" is the Sphinx form for documenting the attribute that follows, and
+    # it is used deliberately throughout src/.  E265 wants a space after the
+    # hash and would break the convention.
+    E265
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    results,
+    docs/plots,
+    models
+per-file-ignores =
+    scripts/*.py:E402
+    tests/*.py:E402
+    evaluation/*.py:E402

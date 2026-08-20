@@ -1,0 +1,28 @@
+* text=auto eol=lf
+
+*.py    text diff=python
+*.md    text
+*.yaml  text
+*.yml   text
+*.json  text
+*.csv   text
+*.tum   text
+*.sh    text eol=lf
+
+# Binary, never diffed
+*.png   binary
+*.jpg   binary
+*.gif   binary
+*.mp4   binary
+*.pkl   binary
+*.npz   binary
+
+# Git LFS rules for the formats that would otherwise bloat history.  No file
+# matching these is committed today: datasets are downloaded, vocabularies are
+# rebuilt, and the trajectory files under results/published are plain text a
+# few hundred kilobytes each.  The rules are here so that the first person to
+# commit a large artefact does the right thing by default.
+*.bag   filter=lfs diff=lfs merge=lfs -text
+*.mp4   filter=lfs diff=lfs merge=lfs -text
+*.mkv   filter=lfs diff=lfs merge=lfs -text
+*.zip   filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,85 @@
+name: ci
+
+# What CI can and cannot do here.
+#
+# It runs everything that does not need the dataset: linting, the unit tests --
+# which include the finite-difference checks on every Jacobian, the Monte Carlo
+# check on the preintegration covariance, and the cross-check of our own
+# trajectory metrics against evo -- and the whole pipeline end to end on a
+# synthetic sequence generated in-process.
+#
+# It does not run on EuRoC.  The dataset is 19 GB behind a research-repository
+# download and every quantitative claim in the README comes from it, so those
+# numbers are reproduced by `make experiments` on a machine with the data, not
+# here.  What CI does guarantee is that a change which breaks the estimator
+# shows up as a failing test the same day rather than as a worse number weeks
+# later.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint
+        run: python -m flake8 src/ tests/ scripts/ evaluation/
+
+      - name: Tests
+        run: python -m pytest tests/ -q --durations=10
+
+      - name: Pipeline end to end on a generated sequence
+        run: python scripts/demo.py --duration 18 --out /tmp/demo.json
+
+      - name: The demo actually produced a metric trajectory
+        run: |
+          python - <<'PY'
+          import json
+          d = json.load(open("/tmp/demo.json"))
+          vio, vo = d["vio"], d["vo"]
+          assert vio["poses"] > 100, vio
+          # Loose bounds: this is a regression guard, not a benchmark.  The
+          # numbers that matter are in docs/results.md and come from EuRoC.
+          assert vio["ate_se3_rmse_m"] < 1.5, vio["ate_se3_rmse_m"]
+          assert abs(vio["scale"] - 1.0) < 0.25, vio["scale"]
+          assert vo["poses"] > 100, vo
+          assert vo["ate_sim3_rmse_m"] < 1.5, vo["ate_sim3_rmse_m"]
+          print("demo ok:", json.dumps({k: round(v, 4) for k, v in [
+              ("vio_ate_se3", vio["ate_se3_rmse_m"]),
+              ("vio_scale", vio["scale"]),
+              ("vo_ate_sim3", vo["ate_sim3_rmse_m"]),
+          ]}))
+          PY
+
+      - name: Synthetic sequence round-trips through the EuRoC loader
+        run: |
+          python scripts/make_sim_dataset.py --out /tmp/sim_sequence --duration 6
+          python scripts/run_sequence.py sim_sequence --data /tmp \
+            --mode vio --out /tmp/sim_results --quiet
+
+      - name: Vocabulary trains and detects on synthetic imagery
+        run: |
+          python scripts/build_vocabulary.py --sim --depth 3 \
+            --out /tmp/vocab.pkl --quiet
+          python scripts/run_loop_closure.py --sim --duration 45 \
+            --vocabulary /tmp/vocab.pkl --out /tmp/loop_results --quiet
