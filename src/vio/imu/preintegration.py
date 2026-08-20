@@ -193,8 +193,12 @@ class Preintegrated:
             return self
 
         acc, gyro = imu.acc, imu.gyro
-        inner = t[(t > t0) & (t < t1)]
-        edges = np.concatenate([[t0], inner, [t1]])
+        # searchsorted rather than a boolean mask: the mask scans the whole
+        # stream on every call, which is invisible for a 50 ms block and is not
+        # for a long one on a 30000-sample sequence.
+        lo = int(np.searchsorted(t, t0, side="right"))
+        hi = int(np.searchsorted(t, t1, side="left"))
+        edges = np.concatenate([[t0], t[lo:hi], [t1]])
         self.span = (float(t0), float(t1))
 
         for k in range(len(edges) - 1):

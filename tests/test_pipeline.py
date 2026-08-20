@@ -196,6 +196,44 @@ def test_estimator_refuses_imu_mode_without_imu_data(rendered_sequence):
                   seq.config.imu_noise, EstimatorConfig(use_imu=True))
 
 
+def test_a_stale_bootstrap_map_is_thrown_away_rather_than_persisted(
+    rendered_sequence,
+):
+    """The estimator has to have a way out of a dead end.
+
+    A keyframe that cannot be located against the bootstrap map is dropped,
+    which leaves the previous keyframe in place, which makes the IMU block for
+    the *next* keyframe span a longer interval than the last.  On EuRoC MH_03
+    that compounded into a run that never initialised and got quadratically
+    slower as it went.  Feeding a featureless stretch reproduces the dead end
+    in miniature; what this asserts is that the estimator restarts rather than
+    sitting in it.
+    """
+    seq, images = rendered_sequence
+    blank = np.full((seq.config.camera.height, seq.config.camera.width),
+                    120, dtype=np.uint8)
+    # bootstrap_keyframes is set out of reach so the estimator is still
+    # bootstrapping when the featureless stretch arrives; once it is RUNNING
+    # the IMU carries it through and PnP is not on the critical path.
+    cfg = EstimatorConfig(use_imu=True, bootstrap_reset_failures=3,
+                          bootstrap_keyframes=500)
+    est = Estimator(seq.config.camera, seq.config.T_body_cam, seq.imu,
+                    seq.config.imu_noise, cfg)
+
+    # Enough real frames to build a map, then a stretch it cannot follow.
+    for image, frame in zip(images[:40], seq.frames[:40]):
+        est.process(image, frame.stamp, frame.index)
+    for frame in seq.frames[40:80]:
+        est.process(blank, frame.stamp, frame.index)
+
+    counts = est.event_summary()
+    assert counts.get("bootstrap restarted", 0) >= 1, counts
+    # And the window is not carrying an ancient keyframe around.
+    if est.keyframes:
+        span = est.keyframes[-1].stamp - est.keyframes[0].stamp
+        assert span < cfg.max_keyframe_gap * len(est.keyframes)
+
+
 def test_a_featureless_stream_does_not_crash(rendered_sequence):
     """Feeding blank images must degrade, not raise."""
     seq, _ = rendered_sequence

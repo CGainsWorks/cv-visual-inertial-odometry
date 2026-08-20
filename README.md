@@ -49,6 +49,7 @@ recovers metric scale to within **4.7 per cent**.  Runtime is measured separatel
 | **Loop closure** | Vocabulary tree over ORB descriptors trained by binary k-means, TF-IDF inverted index, DBoW2 scoring, geometric verification by PnP under RANSAC, four-degree-of-freedom pose graph |
 | **Calibration** | Camera-IMU rotation by orthogonal Procrustes on rotation increments; time offset by angular-rate correlation with sub-frame interpolation, plus a feature-velocity refinement |
 | **Evaluation** | ATE, RPE over distance intervals, Umeyama alignment with and without scale, drift per metre, all written out and cross-checked against `evo`: 26 of 30 comparisons agree to 1.8e-15 m |
+| **Datasets** | EuRoC MAV, run end to end. The loader also reads TUM VI's layout and its equidistant distortion model, but no TUM VI sequence has been run and no TUM VI number is quoted |
 | **Simulator** | Analytic trajectory with exact derivatives, IMU measurement generation, a textured renderer, and an ASL-format writer so the real dataset loader can be tested against known values |
 | **Reporting** | One pass per sequence, no per-sequence tuning; every table regenerated from the result files by `make tables`, and `make docs-check` fails if a document has drifted |
 
@@ -264,6 +265,18 @@ without a line of the estimator changing. So every ATE here is a point estimate
 with an error bar, `make seed-spread` measures it, and
 [§1a](docs/results.md#1a-how-firm-are-those-numbers) reports it. A tuning change
 that moves ATE by less than that spread has not been shown to do anything.
+
+**One sequence never initialised, and got quadratically slower while not
+doing it.** On EuRoC MH_03 the bootstrap map went stale, every new keyframe
+failed to locate against it and was dropped, and because a dropped keyframe
+leaves the previous one in place, the IMU block for the *next* keyframe spanned
+an ever longer interval. By frame 300 it was integrating fifteen seconds of
+inertial data per keyframe and the sequence had not finished in half an hour.
+Two fixes: the bootstrap now throws the map away and starts again from the
+present after six consecutive failures, and a keyframe gap beyond two seconds
+is treated as a broken link rather than something to integrate across. MH_03
+now restarts once, initialises, and runs at the same cost per frame as
+everything else.
 
 **And one that could not be fixed:** ORB descriptors do not match across the
 synthetic images at all, 25 ratio-test matches against EuRoC's 386. The cause

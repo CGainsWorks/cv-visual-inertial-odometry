@@ -113,6 +113,21 @@ class EstimatorConfig:
     bootstrap_keyframes: int = 12
     bootstrap_parallax: float = 0.035
     max_bootstrap_keyframes: int = 60
+    #: Consecutive failures to locate a new keyframe against the bootstrap map
+    #: before the map is thrown away and the two-view initialisation is tried
+    #: again from the present.
+    #:
+    #: Without this the estimator has no way out of a dead end.  A keyframe
+    #: that cannot be located is dropped, so the window's newest keyframe stays
+    #: where it was, and the IMU block for the *next* keyframe therefore spans
+    #: an ever-longer interval.  On EuRoC MH_03 that turned into a run that
+    #: never initialised and got quadratically slower as it went: by frame 300
+    #: it was integrating fifteen seconds of IMU per keyframe, and the whole
+    #: sequence did not finish in half an hour.
+    bootstrap_reset_failures: int = 6
+    #: A gap this long between keyframes means the visual link is broken, and
+    #: integrating across it is not worth the arithmetic.
+    max_keyframe_gap: float = 2.0
 
     # -- solver ------------------------------------------------------------
     window_iterations: int = 8
@@ -244,6 +259,7 @@ class Estimator:
         self._last_features = None
         self._scale_applied = 1.0
         self._n_bootstrap_attempts = 0
+        self._pnp_failures = 0
 
         # Loop closure runs alongside rather than inside the sliding window,
         # which is how VINS-Mono arranges it too: the window is a fixed-lag
@@ -406,12 +422,17 @@ class Estimator:
         self._next_kf_id += 1
 
         if self.keyframes and self.imu is not None:
-            t0 = time.perf_counter()
-            kf.preintegrated = preintegrate(
-                self.imu, self.keyframes[-1].stamp, kf.stamp,
-                bias=self._bias, noise=self.imu_noise,
-            )
-            self.timing.preintegrate += time.perf_counter() - t0
+            gap = kf.stamp - self.keyframes[-1].stamp
+            if gap > self.cfg.max_keyframe_gap:
+                self._log("keyframe gap too long", seconds=round(gap, 2))
+                self._restart_bootstrap(f"{gap:.1f} s gap between keyframes")
+            else:
+                t0 = time.perf_counter()
+                kf.preintegrated = preintegrate(
+                    self.imu, self.keyframes[-1].stamp, kf.stamp,
+                    bias=self._bias, noise=self.imu_noise,
+                )
+                self.timing.preintegrate += time.perf_counter() - t0
 
         self.keyframes.append(kf)
 
@@ -455,13 +476,17 @@ class Estimator:
 
         # Structure exists: locate the new keyframe against it, then refine.
         if not self._locate_by_pnp(kf):
-            self._log("pnp failed during bootstrap", kf=kf.kf_id)
+            self._pnp_failures += 1
+            self._log("pnp failed during bootstrap", kf=kf.kf_id,
+                      consecutive=self._pnp_failures)
             # Drop the keyframe rather than leave an unposed one in the window.
-            # An unposed keyframe contributes nothing, blocks triangulation of
-            # everything it sees, and each one makes the next PnP harder, which
-            # turns one failure into a permanent one.
+            # An unposed keyframe contributes nothing and blocks triangulation
+            # of everything it sees.
             self.keyframes.pop()
+            if self._pnp_failures >= cfg.bootstrap_reset_failures:
+                self._restart_bootstrap("could not locate against the map")
             return
+        self._pnp_failures = 0
         t0 = time.perf_counter()
         self._triangulate_new()
         self.timing.triangulate += time.perf_counter() - t0
@@ -479,6 +504,22 @@ class Estimator:
                 self._log("visual bootstrap complete",
                           keyframes=len(self.keyframes),
                           landmarks=len(self.landmarks))
+
+    def _restart_bootstrap(self, reason: str) -> None:
+        """Throw the bootstrap map away and start again from the present.
+
+        The alternative is to keep trying to locate against a map the camera
+        has left behind, which does not recover and, because each dropped
+        keyframe leaves the previous one in place, makes every subsequent IMU
+        block longer than the last.
+        """
+        self._log("bootstrap restarted", reason=reason,
+                  keyframes=len(self.keyframes))
+        self.values = Values()
+        self.landmarks = {}
+        self._prior = None
+        self._pnp_failures = 0
+        self.keyframes = self.keyframes[-1:]
 
     def _two_view_init(self) -> bool:
         cfg = self.cfg
@@ -579,11 +620,11 @@ class Estimator:
                             estimate_acc_bias=self.cfg.initialise_acc_bias)
         if not result.ok:
             self._log("alignment rejected", reason=result.reason,
-                      keyframes=len(self.keyframes))
-            if len(self.keyframes) > self.cfg.max_bootstrap_keyframes:
-                self.keyframes = self.keyframes[-self.cfg.window_size:]
-                self.values = Values()
-                self.landmarks = {}
+                      keyframes=len(self.keyframes),
+                      attempts=self._n_bootstrap_attempts)
+            if self._n_bootstrap_attempts >= self.cfg.max_bootstrap_keyframes:
+                self._n_bootstrap_attempts = 0
+                self._restart_bootstrap(f"alignment kept failing: {result.reason}")
             return
 
         self._apply_alignment(result)

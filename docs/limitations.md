@@ -32,6 +32,16 @@ motion, would make triangulation well conditioned from the first frame, and
 would remove the excitation gate entirely.  It is the single largest accuracy
 improvement available and it is not implemented.
 
+## TUM VI is supported but not run
+
+The loader reads the ASL directory layout that both EuRoC and TUM VI use, and
+the camera model implements the equidistant distortion TUM VI ships, with a
+round-trip test to machine precision against a real TUM VI intrinsic set.  But
+no TUM VI sequence has been run end to end here, so there is no TUM VI number
+anywhere and none should be inferred.  The fisheye field of view is wide enough
+that the keyframe and triangulation thresholds, which are expressed in
+normalised coordinates and tuned on a 78-degree camera, would want revisiting.
+
 ## It has never touched hardware
 
 Every number comes from EuRoC or from the simulator.  There is no rig, no
