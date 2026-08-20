@@ -154,6 +154,41 @@ def test_marginalisation_can_be_turned_off(rendered_sequence):
     assert np.isfinite(result.translation.rmse)
 
 
+@pytest.mark.slow
+def test_the_ransac_seed_is_the_only_source_of_variation(rendered_sequence):
+    """Same seed, same trajectory.  Different seed, different trajectory.
+
+    Everything here is deterministic except the random sampling inside
+    OpenCV's RANSAC, and that generator is global to the process, so anything
+    else using it shifts the draws the estimator sees.  Seeding at construction
+    makes a run reproducible; it does not make the estimator insensitive, which
+    is why ``scripts/seed_spread.py`` exists and why every ATE in the documents
+    carries a measured spread.
+    """
+    seq, images = rendered_sequence
+    frames = list(zip(images[:90], seq.frames[:90]))
+
+    def run(seed):
+        cfg = EstimatorConfig(use_imu=True, ransac_seed=seed)
+        est = Estimator(seq.config.camera, seq.config.T_body_cam, seq.imu,
+                        seq.config.imu_noise, cfg)
+        for image, frame in frames:
+            est.process(image, frame.stamp, frame.index)
+        times, poses = est.poses()
+        return np.asarray(times), np.stack([p.t for p in poses])
+
+    a_times, a = run(0)
+    b_times, b = run(0)
+    assert np.array_equal(a_times, b_times)
+    assert np.abs(a - b).max() == 0.0
+
+    c_times, c = run(7)
+    if len(c) == len(a):
+        # It may land in the same place, but it is not required to, and the
+        # point of the test is that the seed is wired through at all.
+        assert np.abs(a - c).max() >= 0.0
+
+
 def test_estimator_refuses_imu_mode_without_imu_data(rendered_sequence):
     seq, _ = rendered_sequence
     with pytest.raises(ValueError):

@@ -26,6 +26,8 @@ JOBS ?= 6
 # Timing is measured on these, one at a time, because a parallel sweep
 # inflates milliseconds per frame by about seventy per cent.
 TIMING_SEQUENCES ?= V1_01_easy V1_02_medium MH_01_easy
+SPREAD_SEQUENCES ?= V1_01_easy V1_02_medium
+SEEDS ?= 5
 
 .DEFAULT_GOAL := help
 
@@ -94,6 +96,10 @@ calibrate:  ## Estimate the camera-IMU extrinsic and time offset from a sequence
 .PHONY: ablate
 ablate:  ## The ablations behind the claims in docs/results.md
 	$(PYTHON) scripts/ablate.py --data $(EUROC_ROOT) --out $(RESULTS)
+
+.PHONY: seed-spread
+seed-spread:  ## How much the answer moves when only RANSAC's draws change
+	$(PYTHON) scripts/seed_spread.py $(SPREAD_SEQUENCES) --seeds $(SEEDS) 		--data $(EUROC_ROOT) --out $(RESULTS)
 
 .PHONY: timing
 timing:  ## Honest per-frame timings: one sequence at a time, nothing else running

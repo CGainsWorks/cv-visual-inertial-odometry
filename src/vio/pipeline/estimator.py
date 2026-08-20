@@ -40,6 +40,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
+import cv2
 import numpy as np
 
 from ..backend import factors as F
@@ -122,6 +123,15 @@ class EstimatorConfig:
     marginalise: bool = True
     #: Standard deviations for the fallback prior: rotation (rad), position (m).
     fallback_prior_sigma: tuple = (0.02, 0.05)
+
+    #: Seed for OpenCV's global random number generator, which its RANSAC
+    #: routines draw from.  It is *global to the process*, so anything else
+    #: that uses OpenCV RANSAC -- the loop-closure detector, for instance --
+    #: shifts the draws the estimator sees and changes the trajectory slightly.
+    #: Seeding at construction makes a run reproducible across processes; it
+    #: does not make the estimator insensitive to the draws, and
+    #: ``scripts/seed_spread.py`` measures how sensitive it is.
+    ransac_seed: int = 0
 
     gravity: np.ndarray = field(default_factory=lambda: GRAVITY.copy())
 
@@ -214,6 +224,7 @@ class Estimator:
         if self.cfg.use_imu and imu is None:
             raise ValueError("use_imu is set but no IMU data was supplied")
 
+        cv2.setRNGSeed(int(self.cfg.ransac_seed))
         self.tracker = Tracker(camera, self.cfg.tracker)
         self.values = Values()
         self.keyframes: list = []

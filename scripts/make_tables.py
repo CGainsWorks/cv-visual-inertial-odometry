@@ -332,6 +332,27 @@ def table_ablation_window(runs: dict, ablations: dict) -> str:
     return "\n".join(lines)
 
 
+def table_seed_spread(runs: dict, ablations: dict, results: Path) -> str:
+    path = results / "seed_spread.json"
+    if not path.exists():
+        return "_No seed sweep yet.  Run `make seed-spread`._"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    summary = data.get("summary", {})
+    if not summary:
+        return "_No seed sweep yet.  Run `make seed-spread`._"
+    lines = [
+        "| sequence | seeds | ATE mean | standard deviation | min | max | spread |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for name in sorted(summary):
+        r = summary[name]
+        lines.append(
+            f"| `{name}` | {r['n']} | {r['mean']:.4f} m | {r['sd']:.4f} m | "
+            f"{r['min']:.4f} m | {r['max']:.4f} m | {r['spread_percent']:.1f}% |"
+        )
+    return LINE_BREAK.join(lines)
+
+
 def table_loop(runs: dict, ablations: dict, results: Path) -> str:
     rows = []
     for path in sorted(results.glob("*_loop.json")):
@@ -390,6 +411,7 @@ GENERATORS = {
     "frontend": lambda runs, abl, res: table_ablation_frontend(runs, abl),
     "backend": lambda runs, abl, res: table_ablation_backend(runs, abl),
     "window": lambda runs, abl, res: table_ablation_window(runs, abl),
+    "seed_spread": table_seed_spread,
     "loop": table_loop,
     "calibration": table_calibration,
 }

@@ -50,6 +50,27 @@ ORB-SLAM3 report ATE in the 0.04 to 0.20 m range on these sequences, in C++, in
 real time, with stereo available and years of tuning.  This is a single-pass
 monocular Python implementation written from the equations.
 
+## 1a. How firm are those numbers?
+
+Everything in this system is deterministic except the random sampling inside
+OpenCV's RANSAC, which the front end uses for its two-view check and for PnP.
+That generator is global to the process, which has a consequence worth knowing
+before reading any comparison here: running the loop-closure detector alongside
+the estimator, which does its own PnP under RANSAC, shifted the *same*
+sequence's baseline ATE from 0.301 m to 0.287 m without a line of the estimator
+changing.
+
+So every ATE in this document is a point estimate, and the table below is its
+error bar.  The only thing varying between these runs is the seed OpenCV's
+generator starts from.
+
+<!-- table:seed_spread -->
+_No seed sweep yet.  Run `make seed-spread`._
+<!-- /table:seed_spread -->
+
+Read every other number in this document against that spread.  A tuning change
+that moves ATE by less than it has not been shown to do anything.
+
 ## 2. Relative error and drift
 
 Relative pose error over fixed *distance* intervals rather than fixed time,

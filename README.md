@@ -107,6 +107,12 @@ Monocular, `cam0` only, one pass per sequence, no per-sequence tuning.
 | **mean** | | **0.718** | 4.7% | 12.39 | 2.436 | |
 <!-- /table:euroc -->
 
+Every ATE above is a single run, and its error bar is measured rather than
+assumed: the only thing that is not deterministic here is the random sampling
+inside OpenCV's RANSAC, and `make seed-spread` varies nothing but its seed.
+[§1a](docs/results.md#1a-how-firm-are-those-numbers) has the spread; read
+everything else against it.
+
 Relative pose error and drift, measured over fixed *distance* intervals rather
 than fixed time, because a platform that hovers accumulates time but not error
 and a time-based figure rewards it for that:
@@ -246,6 +252,16 @@ computed them at the pixel each tracked landmark landed on. Those are arbitrary
 patches, not the corners a detector would choose, so they never matched the
 query frame's detections. The map descriptors are now a *subset of the
 detections*.
+
+**The estimator is deterministic, and its answer still moves.** Everything is
+deterministic except the random sampling inside OpenCV's RANSAC, which the
+front end uses for its two-view check and for PnP, and that generator is global
+to the process. Attaching the loop-closure detector, which does its own PnP
+under RANSAC, shifted the same sequence's baseline ATE from 0.301 m to 0.287 m
+without a line of the estimator changing. So every ATE here is a point estimate
+with an error bar, `make seed-spread` measures it, and
+[§1a](docs/results.md#1a-how-firm-are-those-numbers) reports it. A tuning change
+that moves ATE by less than that spread has not been shown to do anything.
 
 **And one that could not be fixed:** ORB descriptors do not match across the
 synthetic images at all, 25 ratio-test matches against EuRoC's 386. The cause

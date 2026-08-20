@@ -131,13 +131,23 @@ EuRoC's cameras are global shutter, so this costs nothing here.  On a
 rolling-shutter camera every row is exposed at a different instant and the
 reprojection model above is wrong in a motion-dependent way.
 
-## The evaluation uses a single run per sequence
+## The headline numbers are single runs, with a measured error bar
 
-The estimator is deterministic given its inputs, so there is no seed variance
-to report on EuRoC.  But it also means the numbers describe one configuration
-on one dataset, and the sensitivity to the dozen thresholds in
-`EstimatorConfig` is characterised only for the window size; see the ablation
-in [results.md](results.md).
+The estimator is deterministic apart from the random sampling inside OpenCV's
+RANSAC, which its two-view check and its PnP both use.  That generator is
+global to the process, so anything else in the same process that uses RANSAC
+shifts the draws the estimator sees: attaching the loop-closure detector, which
+does its own PnP, moved the same sequence's ATE from 0.301 m to 0.287 m without
+touching the estimator.
+
+`make seed-spread` measures the resulting spread by varying nothing but the
+seed, and [results.md](results.md) §1a reports it.  Every other number in this
+repository should be read against that bar, and a tuning change that moves ATE
+by less than it has not been shown to do anything.
+
+Beyond that, the numbers still describe one configuration on one dataset, and
+the sensitivity to the dozen thresholds in `EstimatorConfig` is characterised
+only for the window size; see the ablation in [results.md](results.md).
 
 ## What would move the numbers most, in order
 
