@@ -42,17 +42,20 @@ monocular Python implementation written from the equations.
 
 ## 1a. How firm are those numbers?
 
-Everything in this system is deterministic except the random sampling inside
-OpenCV's RANSAC, which the front end uses for its two-view check and for PnP.
-That generator is global to the process, which has a consequence worth knowing
-before reading any comparison here: running the loop-closure detector alongside
-the estimator, which does its own PnP under RANSAC, shifted the *same*
-sequence's baseline ATE from 0.301 m to 0.287 m without a line of the estimator
-changing.
+Given a commit and a seed, this system is now bit-for-bit reproducible, and
+[tests/test_reproducibility.py](../tests/test_reproducibility.py) runs it in two
+processes with different hash seeds to keep it that way.  It did not start out
+that way; the story is in the README under *What went wrong*.
 
-So every ATE in this document is a point estimate, and the table below is its
-error bar.  The only thing varying between these runs is the seed OpenCV's
-generator starts from.
+What reproducibility does not buy is insensitivity.  The random sampling inside
+OpenCV's RANSAC, which the front end uses for its two-view check and for PnP,
+genuinely changes the answer, and its generator is global to the process, so
+anything else that draws from it -- the loop-closure detector does its own PnP
+-- shifts what the estimator sees.
+
+So every ATE in this document is one sample, and the table below is its error
+bar.  The only thing varying between these runs is the seed OpenCV's generator
+starts from.
 
 <!-- table:seed_spread -->
 _No seed sweep yet.  Run `make seed-spread`._

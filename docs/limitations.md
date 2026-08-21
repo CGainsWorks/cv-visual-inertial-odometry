@@ -154,12 +154,12 @@ reprojection model above is wrong in a motion-dependent way.
 
 ## The headline numbers are single runs, with a measured error bar
 
-The estimator is deterministic apart from the random sampling inside OpenCV's
-RANSAC, which its two-view check and its PnP both use.  That generator is
-global to the process, so anything else in the same process that uses RANSAC
-shifts the draws the estimator sees: attaching the loop-closure detector, which
-does its own PnP, moved the same sequence's ATE from 0.301 m to 0.287 m without
-touching the estimator.
+Given a commit and a seed the estimator is bit-for-bit reproducible, and a test
+runs it in two processes to keep it so.  It is not, however, insensitive.  The
+random sampling inside OpenCV's RANSAC, which its two-view check and its PnP
+both use, genuinely changes the answer, and that generator is global to the
+process, so anything else in the same process that uses RANSAC shifts the draws
+the estimator sees.
 
 `make seed-spread` measures the resulting spread by varying nothing but the
 seed, and [results.md](results.md) §1a reports it.  Every other number in this

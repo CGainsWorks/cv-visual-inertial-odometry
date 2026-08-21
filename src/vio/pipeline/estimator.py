@@ -143,9 +143,11 @@ class EstimatorConfig:
     #: routines draw from.  It is *global to the process*, so anything else
     #: that uses OpenCV RANSAC -- the loop-closure detector, for instance --
     #: shifts the draws the estimator sees and changes the trajectory slightly.
-    #: Seeding at construction makes a run reproducible across processes; it
-    #: does not make the estimator insensitive to the draws, and
-    #: ``scripts/seed_spread.py`` measures how sensitive it is.
+    #: Seeding at construction pins the draws; it does not make the estimator
+    #: insensitive to them, and ``scripts/seed_spread.py`` measures how
+    #: sensitive it is.  Reproducibility across processes additionally needs
+    #: nothing to depend on Python's hash randomisation, which is a separate
+    #: story told in ``vio.backend.marginalisation``.
     ransac_seed: int = 0
 
     gravity: np.ndarray = field(default_factory=lambda: GRAVITY.copy())

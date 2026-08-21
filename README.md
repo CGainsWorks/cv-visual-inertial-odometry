@@ -249,13 +249,12 @@ the difference.
 estimator in two subprocesses with deliberately different `PYTHONHASHSEED`
 values and compares the trajectories bit for bit.
 
-**The estimator is deterministic, and its answer still moves.** Everything is
-deterministic except the random sampling inside OpenCV's RANSAC, which the
-front end uses for its two-view check and for PnP, and that generator is global
-to the process. Attaching the loop-closure detector, which does its own PnP
-under RANSAC, shifted the same sequence's baseline ATE from 0.301 m to 0.287 m
-without a line of the estimator changing. So every ATE here is a point estimate
-with an error bar, `make seed-spread` measures it, and
+**Reproducible is not the same as insensitive.** With the hash-order bug fixed
+the same commit and seed give the same trajectory bit for bit, but the random
+sampling inside OpenCV's RANSAC still genuinely changes the answer, and its
+generator is global to the process, so anything else drawing from it shifts
+what the estimator sees. So every ATE here is one sample with an error bar,
+`make seed-spread` measures it by varying nothing but the seed, and
 [§1a](docs/results.md#1a-how-firm-are-those-numbers) reports it. A tuning change
 that moves ATE by less than that spread has not been shown to do anything.
 

@@ -13,10 +13,12 @@ number to check before believing that a tuning change helped.
 
     python scripts/seed_spread.py V1_01_easy V1_02_medium --seeds 5
 
-The finding that prompted it: attaching the loop-closure detector, which does
-its own PnP under RANSAC, shifted the *same* sequence's baseline ATE from
-0.301 m to 0.287 m without touching the estimator, because both draw from one
-process-global generator.
+Reproducible is not the same as insensitive.  Given a commit and a seed this
+system is bit-for-bit reproducible, and a test in
+``tests/test_reproducibility.py`` keeps it that way.  The seed still matters,
+and that generator is global to the process, so anything else drawing from it
+-- the loop-closure detector does its own PnP under RANSAC -- shifts what the
+estimator sees.
 """
 
 from __future__ import annotations
