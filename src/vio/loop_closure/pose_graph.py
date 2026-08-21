@@ -3,7 +3,7 @@
 Once a loop is detected the correction has to be distributed over the whole
 trajectory rather than applied as a jump at the closing keyframe.  That is a
 pose graph: one node per keyframe, one edge per consecutive pair carrying the
-relative motion the estimator reported, and one edge per verified loop.  The
+relative motion the estimator reported and one edge per verified loop.  The
 graph is the same machinery as the sliding-window back end, the same
 ``RelativePoseFactor``, the same Levenberg-Marquardt, over a different set of
 variables.
@@ -35,7 +35,7 @@ outlier.
 
 A kernel cannot distinguish "large because the trajectory drifted" from "large
 because the loop is wrong"; only the geometric verification in
-:mod:`vio.loop_closure.detector` can, and that is where the defence belongs.
+:mod:`vio.loop_closure.detector` can and that is where the defence belongs.
 What the kernel is for here is bounding the damage from an edge that survived
 verification and is still catastrophically wrong, so it is a Huber with a
 generous threshold rather than anything redescending.  ``CauchyLoss`` is still
@@ -134,7 +134,7 @@ def build(keyframe_ids, poses, closures, config: PoseGraphConfig | None = None):
             g.add(F.GravityDirectionFactor(f"p{k}", poses[k].R, info))
 
     # The first node is held: a pose graph is otherwise free to translate and
-    # rotate as a whole, and the solver would wander through that null space.
+    # rotate as a whole and the solver would wander through that null space.
     g.add(F.PosePriorFactor(f"p{ids[0]}", poses[ids[0]], np.eye(6) * 1e4))
     return g, values
 

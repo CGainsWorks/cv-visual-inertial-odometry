@@ -6,7 +6,7 @@ it is a degree of attitude error injected into every preintegrated block, and
 that the error is *correlated with motion* rather than random, so it does not
 average out, it becomes drift.
 
-Two estimators are here, and they answer the same question at different
+Two estimators are here and they answer the same question at different
 resolutions.
 
 **Correlation**, :func:`estimate_by_correlation`.  The gyroscope measures
@@ -15,7 +15,7 @@ between consecutive frames divided by the interval.  Both are the same physical
 signal seen through different clocks, so the offset is the lag that maximises
 their correlation.  Resolution is limited by the frame interval, which a
 parabolic fit through the correlation peak improves to a fraction of a frame.
-This is the method Kalibr uses to *initialise*, and it is robust because it
+This is the method Kalibr uses to *initialise* and it is robust because it
 uses no structure, no scale and no extrinsic translation, only the fact that
 both sensors are attached to the same rigid body.
 
@@ -23,7 +23,7 @@ both sensors are attached to the same rigid body.
 feature is moving across the image at velocity ``v`` and the frame was actually
 exposed ``td`` later than its timestamp says, then the feature was really at
 ``u + v * td``.  Making ``td`` a variable in the reprojection residual gives a
-gradient, and the estimate becomes continuous rather than quantised by the
+gradient and the estimate becomes continuous rather than quantised by the
 frame rate.
 
 The correlation estimate is used to initialise the refinement, because the

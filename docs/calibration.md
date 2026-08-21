@@ -1,6 +1,6 @@
 # Camera-IMU calibration
 
-What is estimated, what is not, and why the distinction is about observability
+What is estimated, what is not and why the distinction is about observability
 rather than effort.
 
 Run it with:
@@ -24,7 +24,7 @@ dR_body = R_bc  dR_cam  R_bc^T
 Taking logarithms gives `theta_body = R_bc theta_cam` for every pair, which is
 an orthogonal Procrustes problem: stack the two sets of rotation vectors and
 take an SVD.  This is the classical hand-eye result specialised to the case
-where only rotation is wanted, and it is unusually well behaved: it needs no
+where only rotation is wanted and it is unusually well behaved: it needs no
 scale, no translation, no structure and no landmarks, only a gyroscope and a
 visual rotation estimate.
 
@@ -32,7 +32,7 @@ Two details in
 [`vio/calibration/extrinsic.py`](../src/vio/calibration/extrinsic.py) matter:
 
 * **Small rotations are excluded, not averaged in.**  Below about 0.02 rad the
-  logarithm is dominated by noise, and Procrustes weights each pair by its
+  logarithm is dominated by noise and Procrustes weights each pair by its
   magnitude squared, so a noise-only pair contributes pure noise at full
   weight.  A test feeds in forty good pairs and two hundred junk ones and
   checks that the junk is dropped and the answer is unaffected.
@@ -42,9 +42,9 @@ Two details in
 ### The inputs have to be independent of the answer
 
 The first version of `scripts/calibrate.py` took ground-truth body poses,
-multiplied them by the *published* extrinsic to get camera rotations, and then
+multiplied them by the *published* extrinsic to get camera rotations and then
 recovered that extrinsic to within 1e-14 radians.  That is not a calibration,
-it is an identity: the answer had been used to construct the input, and the
+it is an identity: the answer had been used to construct the input and the
 1e-14 was the round-off in a matrix product.
 
 What runs now is the real procedure.  Camera rotations come from **visual
@@ -53,8 +53,8 @@ extrinsic or the IMU enters them.  Body rotations come from **integrating the
 raw gyroscope** between the same instants, so nothing about the camera enters
 them.  The published extrinsic is loaded only at the end, to score the result.
 
-That is slower, because it means running the estimator, and the answer is worse,
-because it now carries the visual odometry's own rotation error.  Both are the
+That is slower, because it means running the estimator.  The answer is worse
+too, because it now carries the visual odometry's own rotation error.  Both are the
 correct outcome: the number means something now.
 
 The result on real sequences is in [results.md](results.md) §9, compared
@@ -64,7 +64,7 @@ against EuRoC's published extrinsic, which the routine never sees.
 
 Cameras and IMUs are rarely on the same clock.  A few milliseconds does not
 sound like much until you notice that at 200 degrees per second it injects a
-degree of attitude error into every preintegrated block, and that the error is
+degree of attitude error into every preintegrated block and that the error is
 *correlated with motion* rather than random, so it does not average out; it
 becomes drift.
 
@@ -74,7 +74,7 @@ the lag that maximises their correlation.  A parabolic fit through the
 correlation peak recovers a fraction of the grid step, which is what lets a
 2 ms resolution give a sub-millisecond answer.
 
-This is the method Kalibr uses to *initialise*, and it is robust for the same
+This is the method Kalibr uses to *initialise* and it is robust for the same
 reason the rotation estimate is: it uses no structure, no scale and no
 translation.
 
@@ -94,9 +94,9 @@ frame interval apart, which is why the correlation estimate initialises it.
 
 The lever arm between camera and IMU is only observable through the
 acceleration that *rotation* induces at a displaced point.  Under pure
-translation it is not observable at all, and under modest rotation it is
+translation it is not observable at all and under modest rotation it is
 observable but badly conditioned, because the estimate is dominated by whatever the
-visual scale happened to be, and on a monocular sequence that scale is itself
+visual scale happened to be and on a monocular sequence that scale is itself
 being estimated.
 
 So `scripts/calibrate.py` reports the published translation and estimates
@@ -116,7 +116,7 @@ believing a translation estimate from any dataset.
 ## What is not calibrated at all
 
 * **Camera intrinsics.**  Taken from the dataset.  Estimating them needs a
-  target, and a target is hardware.
+  target and a target is hardware.
 * **IMU intrinsics**: scale factor, axis misalignment, g-sensitivity.  Only
   additive biases are estimated.  Reasonable for the ADIS16448 in EuRoC,
   not reasonable for a phone.
@@ -127,6 +127,6 @@ believing a translation estimate from any dataset.
 Nowhere, by choice.  The estimator holds the extrinsic fixed and assumes the
 timestamps are already aligned.  Leaving six extra degrees of freedom free
 inside a ten-keyframe sliding window makes the solve slower and less stable for
-no gain once the calibration has converged, and the calibration is a
+no gain once the calibration has converged and the calibration is a
 once-per-rig operation rather than a per-frame one.  Online estimation is the
 right answer for a system whose mounting flexes; this is not one.

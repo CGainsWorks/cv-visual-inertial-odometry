@@ -1,24 +1,32 @@
 #!/usr/bin/env python
-"""How much does the answer move when only RANSAC's random draws change?
+"""Does the answer move when only RANSAC's random draws change?
 
-Everything in this system is deterministic except the random sampling inside
-OpenCV's RANSAC, which the front end uses for its two-view check and for PnP.
-That makes an ATE from a single run a point estimate with an unstated error
-bar, and a comparison between two configurations meaningless if the difference
-between them is smaller than the bar.
+The measured answer is no.  The reason the question needed asking is a bug
+this repository used to have: two runs of the same commit at the same seed
+once gave 0.257 m and 0.362 m of absolute trajectory error on EuRoC V1_01.
+The obvious suspect was the random sampling inside OpenCV's RANSAC, which the
+front end uses for its two-view check and for PnP, so the seed was made
+configurable and this script was written to publish an error bar around every
+reported number.
 
-This runs the same sequence several times, changing nothing but the seed
-OpenCV's global generator starts from, and reports the spread.  It is the
-number to check before believing that a tuning change helped.
+The suspect was innocent.  The variation came from
+``vio.backend.marginalisation`` iterating a set of string keys, which Python
+hashes differently in every process.  The column order of the marginal system
+followed that iteration order and the prior followed the columns.  With the
+ordering fixed, this script reports a spread of zero: five seeds on V1_01 and
+five on V1_02 give an ATE identical to every digit printed, standard
+deviation 0.0000.  A direct check explains why.  ``cv2.setRNGSeed`` does not
+change what ``findFundamentalMat`` or ``findEssentialMat`` return under
+OpenCV 5, even on a problem with twenty per cent outliers, because those
+routines sample through USAC rather than through the global generator.
+
+So the numbers in the documents are not samples with error bars.  They are
+the answer.  A tuning change that moves ATE at all has moved it for a reason.
+
+This script stays because that conclusion is a measurement about one version
+of one library rather than a guarantee, worth re-running when either changes.
 
     python scripts/seed_spread.py V1_01_easy V1_02_medium --seeds 5
-
-Reproducible is not the same as insensitive.  Given a commit and a seed this
-system is bit-for-bit reproducible, and a test in
-``tests/test_reproducibility.py`` keeps it that way.  The seed still matters,
-and that generator is global to the process, so anything else drawing from it
--- the loop-closure detector does its own PnP under RANSAC -- shifts what the
-estimator sees.
 """
 
 from __future__ import annotations
@@ -31,6 +39,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,10 +55,18 @@ DEFAULT_DATA = Path(
 )
 
 
+#: See ``scripts/ablate.py``: these have to be in the environment before a
+#: worker starts, not set from inside it, or every worker opens its own BLAS
+#: thread pool and the sweep oversubscribes the machine.
+SINGLE_THREAD_ENV = (
+    "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS",
+)
+
+
 def one(job) -> dict:
     sequence, seed, data, frames, mode = job
-    for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
-        os.environ[name] = "1"
+    cv2.setNumThreads(1)
     loaded = euroc.load(Path(data) / sequence, stereo=False)
     cam = loaded.cam0
     n = len(cam) if frames <= 0 else min(frames, len(cam))
@@ -97,6 +114,8 @@ def main() -> int:
         for s in args.sequences for seed in range(args.seeds)
     ]
     print(f"{len(jobs)} runs on {args.jobs} workers", flush=True)
+    for name in SINGLE_THREAD_ENV:
+        os.environ[name] = "1"
     rows = []
     with ProcessPoolExecutor(max_workers=args.jobs) as pool:
         for row in pool.map(one, jobs):
@@ -124,6 +143,14 @@ def main() -> int:
         s = summary[sequence]
         print(f"{sequence:18s} {s['n']:5d} {mean:9.4f} {sd:8.4f} "
               f"{s['min']:8.4f} {s['max']:8.4f} {s['spread_percent']:7.1f}%")
+
+    spreads = [v["spread_percent"] for v in summary.values()]
+    if spreads and max(spreads) < 1e-9:
+        print()
+        print("Spread is exactly zero on every sequence.  The seed changes nothing"
+              " in this OpenCV build, so each ATE above is the answer")
+        print("rather than one sample of it.  The module docstring says why,"
+              " together with what would have to change for that to stop holding.")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

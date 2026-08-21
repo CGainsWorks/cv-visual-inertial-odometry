@@ -2,12 +2,12 @@
 """Estimate the camera-IMU extrinsic rotation and time offset from a sequence.
 
 EuRoC ships a calibration, which makes this checkable rather than merely
-plausible: the routines here never see it, and the reported error is the gap
+plausible: the routines here never see it and the reported error is the gap
 between what they found and what the dataset says.
 
 **The inputs are deliberately independent of the answer.**  An earlier version
 of this script took ground-truth body poses, multiplied them by the *published*
-extrinsic to get camera rotations, and then recovered that extrinsic to within
+extrinsic to get camera rotations and then recovered that extrinsic to within
 1e-14 radians.  That is not a calibration, it is an identity: the answer had
 been used to construct the input.  What runs now is the real procedure:
 
@@ -18,7 +18,7 @@ been used to construct the input.  What runs now is the real procedure:
 * the published extrinsic is loaded only at the end, to score the result.
 
 The translation is not estimated.  It is only observable through the lever-arm
-acceleration that rotation induces, and on a sequence with modest rotational
+acceleration that rotation induces and on a sequence with modest rotational
 excitation the estimate is dominated by whatever the visual scale happened to
 be.  ``tests/test_calibration.py`` recovers it on synthetic data where the
 excitation can be guaranteed; ``docs/calibration.md`` says why the real-data
@@ -65,7 +65,7 @@ def visual_rotations(sequence, frames: int, offset: float, quiet: bool):
     holds the last keyframe's pose, because interpolating towards a pose it has
     not computed yet would be inventing information.  Feeding those held poses
     into a correlation against the gyroscope makes the visual signal lag by
-    part of a keyframe interval, and the lag is read back as a time offset:
+    part of a keyframe interval and the lag is read back as a time offset:
     measured on V1_01, that artefact alone accounted for about 7 ms of apparent
     offset on a sequence whose true offset is zero.  Keyframe poses are genuine
     estimates and carry no such lag.
@@ -89,7 +89,7 @@ def gyro_rotations(imu, stamps, stride: int):
     """Body rotation increments between the given instants, from the gyroscope.
 
     Preintegration at zero bias.  A few milliradians per second of unmodelled
-    bias is well below the extrinsic accuracy this can reach, and estimating it
+    bias is well below the extrinsic accuracy this can reach and estimating it
     here would need the very extrinsic being solved for.
     """
     out = []

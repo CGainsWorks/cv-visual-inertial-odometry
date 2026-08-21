@@ -171,7 +171,7 @@ def main() -> int:
     gt_times, gt_poses = read_tum(out_dir / f"{name}_gt.tum")
 
     # Both alignments are always reported.  A monocular visual-only trajectory
-    # can only be scored under sim3, and quoting a visual-inertial number under
+    # can only be scored under sim3 and quoting a visual-inertial number under
     # sim3 would hide the very thing the IMU is there to provide.
     metrics = {}
     for mode in ("se3", "sim3"):

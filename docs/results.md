@@ -10,7 +10,7 @@ Two alignments are reported throughout and the distinction matters:
 * **`se3`**: rigid alignment, no scale freedom.  The only honest way to score
   a system that claims a metric trajectory.
 * **`sim3`**: similarity alignment, which is *given* the correct scale.  The
-  only way to score a monocular visual-only trajectory at all, and the wrong
+  only way to score a monocular visual-only trajectory at all and the wrong
   way to score a visual-inertial one, because it hides the thing the IMU is
   there to provide.
 
@@ -26,43 +26,72 @@ poses begin at initialisation, which on the Machine Hall sequences is a few
 seconds in; see [limitations.md](limitations.md).
 
 <!-- table:euroc -->
-_No results yet.  Run `make experiments`._
+| sequence | length | VIO ATE (m) | VIO scale err | VIO rot (deg) | VO ATE, sim3 (m) | VO scale |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `MH_01_easy` | 81 m | **1.145** | 5.4% | 18.49 | 2.316 | 3.60x |
+| `MH_02_easy` | 73 m | **0.544** | 3.4% | 8.23 | 0.670 | 0.48x |
+| `MH_03_medium` | 130 m | **0.714** | 4.3% | 9.03 | 0.758 | 7.46x |
+| `MH_04_difficult` | 91 m | **1.338** | 4.5% | 11.82 | 6.792 | 2.72x |
+| `MH_05_difficult` | 97 m | **1.125** | 2.4% | 19.29 | 2.372 | 0.86x |
+| `V1_01_easy` | 58 m | **0.272** | 2.9% | 10.48 | 1.109 | 2.37x |
+| `V1_02_medium` | 76 m | **0.336** | 7.3% | 11.49 | 1.135 | 0.23x |
+| `V1_03_difficult` | 78 m | **0.381** | 6.2% | 10.23 | 1.519 | 2.00x |
+| **mean** | | **0.732** | 4.5% | 12.38 | 2.084 | |
 <!-- /table:euroc -->
 
 The visual-only column is the point of the comparison.  Its trajectory *shape*
-is good, which is what a small `sim3` error means, and its size is whatever
+is good, which is what a small `sim3` error means and its size is whatever
 the first two keyframes happened to imply.  The scale column says by how much.
-A monocular system cannot do better than that, and the difference between the
+A monocular system cannot do better than that and the difference between the
 two columns is the entire contribution of the inertial measurements.
 
-For context, and not as a claim about this implementation: VINS-Mono and
+For context and not as a claim about this implementation: VINS-Mono and
 ORB-SLAM3 report ATE in the 0.04 to 0.20 m range on these sequences, in C++, in
 real time, with stereo available and years of tuning.  This is a single-pass
 monocular Python implementation written from the equations.
 
 ## 1a. How firm are those numbers?
 
-Given a commit and a seed, this system is now bit-for-bit reproducible, and
+Given a commit, this system is now bit-for-bit reproducible, and
 [tests/test_reproducibility.py](../tests/test_reproducibility.py) runs it in two
 processes with different hash seeds to keep it that way.  It did not start out
 that way; the story is in the README under *What went wrong*.
 
-What reproducibility does not buy is insensitivity.  The random sampling inside
-OpenCV's RANSAC, which the front end uses for its two-view check and for PnP,
-genuinely changes the answer, and its generator is global to the process, so
-anything else that draws from it -- the loop-closure detector does its own PnP
--- shifts what the estimator sees.
+Reproducibility on its own would not settle whether these numbers are firm.
+A system can be bit-for-bit repeatable and still swing wildly with a different
+random seed, in which case each ATE would be one draw from a distribution and
+worth reporting with a bar.  The table below was written to publish that bar.
 
-So every ATE in this document is one sample, and the table below is its error
-bar.  The only thing varying between these runs is the seed OpenCV's generator
-starts from.
+It came back empty, in the useful sense.  Varying nothing but the seed OpenCV's
+generator starts from, five runs on V1_01 and five on V1_02 return an ATE
+identical to every digit printed, with a standard deviation of exactly zero.
+The reason is that `cv2.setRNGSeed` does not reach these routines under
+OpenCV 5: `findFundamentalMat` and `findEssentialMat` sample through USAC.
+A direct check on a synthetic problem with twenty per cent outliers returns the
+same matrix to nine decimal places for five different seeds.  Nor does a second
+consumer of RANSAC in the same process disturb anything, which was the other
+half of the worry.  Running the loop-closure detector alongside the estimator,
+with its own PnP under RANSAC, leaves the estimator's trajectory exactly where
+it was: MH_05 scores 1.1249 m either way and V1_02 scores 0.3365 m either way.
+
+So the numbers in this document are not samples.  Each is the answer for its
+configuration.  A tuning change that moves ATE at all has moved it for a reason
+rather than by luck.  The sweep is kept because that conclusion is a
+measurement about one library version rather than a promise about RANSAC in
+general.
 
 <!-- table:seed_spread -->
-_No seed sweep yet.  Run `make seed-spread`._
+| sequence | seeds | ATE mean | standard deviation | min | max | spread |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `V1_01_easy` | 5 | 0.2722 m | 0.0000 m | 0.2722 m | 0.2722 m | 0.0% |
+| `V1_02_medium` | 5 | 0.3365 m | 0.0000 m | 0.3365 m | 0.3365 m | 0.0% |
 <!-- /table:seed_spread -->
 
-Read every other number in this document against that spread.  A tuning change
-that moves ATE by less than it has not been shown to do anything.
+The honest history is that this section once claimed a 31% spread and blamed
+the seed for it.  That spread was real and the blame was wrong.  It came from
+the hash-order bug described in the README and disappeared when the
+marginalisation stopped iterating a set.  The measurement above is what
+replaced the guess.
 
 ## 2. Relative error and drift
 
@@ -71,30 +100,46 @@ because a platform that hovers accumulates time but not error and a time-based
 figure rewards it for that.
 
 <!-- table:drift -->
-_No results yet.  Run `make experiments`._
+| sequence | distance | VIO RPE over 1 m | VIO drift | VO RPE over 1 m | VO drift |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `MH_01_easy` | 81 m | 0.1430 m | 5.21 %/m | 0.5163 m | 8.09 %/m |
+| `MH_02_easy` | 73 m | 0.0970 m | 2.23 %/m | 0.1491 m | 2.45 %/m |
+| `MH_03_medium` | 130 m | 0.1112 m | 0.59 %/m | 0.2922 m | 1.14 %/m |
+| `MH_04_difficult` | 91 m | 0.1015 m | 2.20 %/m | 1.1300 m | 4.38 %/m |
+| `MH_05_difficult` | 97 m | 0.1161 m | 1.90 %/m | 0.3359 m | 3.52 %/m |
+| `V1_01_easy` | 58 m | 0.1057 m | 0.49 %/m | 0.5149 m | 1.79 %/m |
+| `V1_02_medium` | 76 m | 0.0954 m | 0.29 %/m | 0.5861 m | 1.73 %/m |
+| `V1_03_difficult` | 78 m | 0.1169 m | 0.30 %/m | 0.7880 m | 1.91 %/m |
 <!-- /table:drift -->
 
 Drift is the final absolute error divided by the distance travelled.  The mean
 version, average error per metre rather than final error per metre, is in the
-JSON, and is the smaller of the two; quoting only that one is the usual sleight
+JSON and is the smaller of the two; quoting only that one is the usual sleight
 of hand.
 
 ## 3. Where the time goes
 
 <!-- table:timing -->
-_No uncontended timing runs yet.  `make experiments` runs in parallel, which inflates milliseconds per frame; run `make timing` for the honest figures._
+| sequence | tracking | preintegration | triangulation | window solve | marginalisation | total | effective |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `MH_01_easy` | 6.7 | 1.6 | 3.0 | 67.1 | 0.4 | **79 ms** | 12.7 Hz |
+| `V1_01_easy` | 7.6 | 1.6 | 3.2 | 85.8 | 0.6 | **99 ms** | 10.1 Hz |
+| `V1_02_medium` | 7.9 | 1.7 | 6.0 | 113.4 | 0.9 | **130 ms** | 7.7 Hz |
+| **mean** | 7.4 | 1.6 | 4.1 | 88.8 | 0.6 | **103 ms** | 10.2 Hz |
+
+All figures are milliseconds per *frame* on one core, from runs that had the machine to themselves; the per-keyframe stages are scaled by the keyframe rate.
 <!-- /table:timing -->
 
 These come from runs that had the machine to themselves.  The accuracy tables
 above come from an eight-way parallel sweep, which does not affect them because
-the estimator is deterministic, but which reads about seventy per cent slower
+the estimator is deterministic but which reads about seventy per cent slower
 per frame.  `make timing` produces the uncontended figures and the timing table
 ignores any run that shared the machine.
 
 **This does not run in real time and nothing here claims it does.**  A 20 Hz
 camera allows 50 ms per frame.  The front end fits comfortably; the window
 solve does not.  The constant factor is Python, not the algorithm: the window
-is bounded, the solve is Schur-complemented, and the same graph in C++ would be
+is bounded, the solve is Schur-complemented and the same graph in C++ would be
 inside budget.
 
 ## 4. Accelerometer bias at initialisation
@@ -144,7 +189,7 @@ the reference has no integration error of its own.
 
 The scheme in Forster et al. uses the measurement at the start of each
 interval.  Averaging the two endpoints instead is second-order accurate and
-costs nothing, but only if each acceleration is rotated by the attitude at
+costs nothing but only if each acceleration is rotated by the attitude at
 *its own* end of the interval before averaging.  Averaging the raw readings and
 keeping the start-of-interval rotation, which is the obvious first attempt, makes
 velocity worse than plain Euler.
@@ -166,7 +211,7 @@ will land, which ought to help KLT.
 
 It halves the initial guess error and gains **no features at all** at EuRoC's
 native 20 Hz, because the displacement is already inside the search window.  It
-starts paying below about 7 Hz.  So it is off by default, and kept because the
+starts paying below about 7 Hz.  So it is off by default and kept because the
 conclusion is a property of this dataset's frame rate rather than of the idea.
 
 ## 7. Back end
@@ -176,15 +221,15 @@ Vectorised reprojection group, 1500 observations in the window:
 
 | path | per linearisation | agreement |
 | --- | ---: | ---: |
-| scalar factors | 74.5 ms | reference |
-| vectorised group | **4.6 ms** (16x) | 6e-10 in the Jacobian |
+| scalar factors | 57.0 ms | reference |
+| vectorised group | **4.2 ms** (13x) | 6e-10 in the Jacobian |
 
 Marginalising the departing keyframe's inertial states, or not:
 
 | marginalise | ATE (m) | rotation (deg) | scale error | per keyframe |
 | --- | ---: | ---: | ---: | ---: |
-| yes | 0.3190 | 2.57 | 3.48% | 245 ms |
-| no | 0.1935 | 2.28 | 2.86% | 232 ms |
+| yes | 0.2760 | 2.57 | 2.40% | 175 ms |
+| no | 0.1935 | 2.28 | 2.86% | 170 ms |
 <!-- /table:backend -->
 
 The vectorised group and the scalar factors are the same mathematics; a test
@@ -192,15 +237,40 @@ asserts they agree to 1e-11 in the Jacobian.  The group exists because a
 thousand Python objects per linearisation is what makes a Python bundle
 adjustment slow, not the arithmetic.
 
+The marginalisation row above deserves a second look, because taken alone it
+says the prior is not worth keeping: dropping it scores better on ATE and costs
+slightly less.  Twenty-five seconds of generated flight is a weak place to
+settle that question.  The window in that sequence never travels far enough for
+the information the prior carries to be worth much; the sequence is also
+too short for scale to drift.  Asked again of two full EuRoC sequences, the answer
+reverses:
+
+<!-- table:marginalisation_euroc -->
+| sequence | marginal prior | ATE (m) | rotation (deg) | scale error | per keyframe |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `V1_01_easy` | kept | 0.2722 | 10.48 | 2.92% | 270 ms |
+| `V1_01_easy` | dropped | 0.2755 | 8.33 | 6.97% | 268 ms |
+| `V1_02_medium` | kept | 0.3365 | 11.49 | 7.30% | 239 ms |
+| `V1_02_medium` | dropped | 0.4614 | 11.13 | 9.81% | 236 ms |
+<!-- /table:marginalisation_euroc -->
+
+On V1_01 the prior is worth 1.2% of ATE, which is not much; it more than
+halves the scale error, from 6.97% to 2.92%.  On the longer and faster V1_02 it
+is worth 27% of ATE.  It costs about one per cent of the time per keyframe.
+That is the comparison the default is set from.  It is worth stating plainly
+that the short synthetic version of the same experiment pointed the other way.
+A generated sequence is a good place to check that a thing is *implemented*
+correctly and a poor place to decide whether it is *worth having*.
+
 ## 8. Sliding-window size
 
 <!-- table:window -->
 | window | ATE (m) | scale error | per frame |
 | ---: | ---: | ---: | ---: |
-| 5 keyframes | 0.6343 | 21.93% | 72 ms |
-| 8 keyframes | 0.4626 | 4.64% | 88 ms |
-| 10 keyframes | 0.3190 | 3.48% | 111 ms |
-| 15 keyframes | 0.2986 | 1.44% | 128 ms |
+| 5 keyframes | 0.6341 | 21.65% | 48 ms |
+| 8 keyframes | 0.4647 | 4.53% | 64 ms |
+| 10 keyframes | 0.2760 | 2.40% | 73 ms |
+| 15 keyframes | 0.3011 | 1.51% | 95 ms |
 <!-- /table:window -->
 
 ## 9. Loop closure
@@ -211,7 +281,10 @@ elsewhere; the training set is recorded inside the vocabulary file.  A
 of each other, facing within 45 degrees, at least 30 keyframes apart.
 
 <!-- table:loop -->
-_No loop-closure runs yet.  Run `make loop`._
+| sequence | revisit episodes | closures | correct | precision | episode recall | ATE before | ATE after |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `MH_05_difficult` | 21 | 10 | 10 | 1.00 | 0.29 | 1.125 m | **0.404 m** (-64%) |
+| `V1_02_medium` | 317 | 8 | 8 | 1.00 | 0.12 | 0.336 m | **0.267 m** (-21%) |
 <!-- /table:loop -->
 
 Precision is over emitted closures.  Recall is over revisit *episodes*, meaning
@@ -235,16 +308,19 @@ recovered from a deliberately injected one, so a routine that always returns
 zero fails rather than passes.
 
 <!-- table:calibration -->
-_No calibration runs yet.  Run `make calibrate`._
+| sequence | rotation error | Procrustes residual | offset injected | offset recovered | error | correlation |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `MH_03_medium` | 1.115 deg | 1.7e-02 rad | +18.7 ms | +15.7 ms | -3.05 ms | 0.971 |
+| `V1_01_easy` | 1.772 deg | 2.4e-02 rad | +0.0 ms | +2.7 ms | +2.66 ms | 0.928 |
 <!-- /table:calibration -->
 
 The extrinsic *translation* is not estimated from real sequences.  It is only
-observable through the lever-arm acceleration that rotation induces, and on a
+observable through the lever-arm acceleration that rotation induces and on a
 sequence with modest rotational excitation the estimate is dominated by
 whatever the visual scale happened to be.  It is recovered on synthetic data
 where the excitation can be guaranteed.
 [`tests/test_calibration.py`](../tests/test_calibration.py) starts 3 degrees
-It starts 4 cm away and converges back, and [calibration.md](calibration.md) says
+It starts 4 cm away and converges back and [calibration.md](calibration.md) says
 why the real-data case is left alone.
 
 ## Reproducing all of it
@@ -263,4 +339,4 @@ The records those produce are committed under
 24 MB of text that two commands regenerate would make a clone an order of
 magnitude heavier than the code.
 
-`make evo-check` then re-scores every trajectory file with `evo`.  Twenty-six of the thirty comparisons agree to 1.8e-15 metres, which is round-off.  The remaining four are all MH_01, where exactly one estimate sits on the 20 ms association boundary: ours keeps it, evo does not, and the ATE differs by up to 2.2 mm on 3639 pairs against 3638.  `make evo-check` prints the comparison and distinguishes a tie-break from a genuine disagreement.
+`make evo-check` then re-scores every trajectory file with `evo`.  Twenty-eight of the thirty-two comparisons agree to 1.8e-15 metres, which is round-off.  The remaining four are all MH_01, where exactly one estimate sits on the 20 ms association boundary: ours keeps it, evo does not and the ATE differs by up to 2.2 mm on 3639 pairs against 3638.  `make evo-check` prints the comparison and distinguishes a tie-break from a genuine disagreement.

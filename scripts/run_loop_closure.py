@@ -9,12 +9,12 @@ within ``--radius`` metres and their true viewing directions within
 ``--bearing`` degrees.  Precision is what fraction of emitted closures were
 genuine.
 
-Recall is over **revisit episodes**, not keyframe pairs, and the distinction is
+Recall is over **revisit episodes**, not keyframe pairs and the distinction is
 not pedantry.  On V1_02 there are 1356 keyframes in a room a few metres across,
 so 1347 of them have some earlier keyframe within 1.5 m; counted that way a
 detector that closes the loop cleanly once per pass through the room scores
 0.005 and looks broken.  An episode is a contiguous stretch of keyframes
-revisiting the same place, and it counts as detected if *any* keyframe in it
+revisiting the same place and it counts as detected if *any* keyframe in it
 produced a verified closure, which is what the pose graph needs: a second
 closure over the same stretch adds almost nothing.
 
@@ -139,14 +139,24 @@ def main() -> int:
         from vio.sim.simulator import SimConfig, simulate
         from vio.sim.trajectory import Sinusoid, Trajectory
 
-        # A closed loop: commensurate periods, so the path repeats exactly.
+        # A closed loop: every period divides the 20 s lap, so the path and
+        # the attitude both repeat exactly once per lap.  Three details are
+        # load bearing.  The yaw rate is one full turn per lap, without which
+        # the body slides sideways around the circle, features leave the frame
+        # within a few frames and bootstrap PnP fails.  The vertical
+        # oscillation is fast, five cycles per lap: a slow circle has an almost
+        # constant world-frame acceleration inside any one initialisation
+        # window, which reads as 0.026 m/s^2 of excitation and the initialiser
+        # refuses it.  And the lap is small enough that the room's landmarks
+        # stay in range.
         looping = Trajectory(
-            position=Sinusoid([3.0, 2.4, 0.4],
-                              [2 * np.pi / 20.0, 2 * np.pi / 20.0, 2 * np.pi / 10.0],
+            position=Sinusoid([2.5, 2.0, 0.3],
+                              [2 * np.pi / 20.0, 2 * np.pi / 20.0, 2 * np.pi / 4.0],
                               [0.0, np.pi / 2, 0.0], [0.0, 0.0, 1.4]),
             rotation=Sinusoid([0.1, 0.08, 0.3],
                               [2 * np.pi / 20.0, 2 * np.pi / 20.0, 2 * np.pi / 20.0],
                               [0.4, 2.1, 0.0], [0.0, 0.0, 0.0]),
+            yaw_rate=2 * np.pi / 20.0,
         )
         cfg = SimConfig(duration=args.duration, trajectory=looping, seed=71)
         seq = simulate(cfg)

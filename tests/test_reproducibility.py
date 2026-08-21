@@ -3,12 +3,12 @@
 This needs its own file because it needs its own *processes*.  The bug it
 exists to catch is invisible from inside one: Python randomises string hashing
 per process, so a set of variable keys iterates in a different order every
-time, and if that order reaches the numerics the answer moves.  It did.
+time and if that order reaches the numerics the answer moves.  It did.
 ``vio.backend.marginalisation`` ordered the columns of its system by iterating
-a set of keys, that ordering fixed the eigendecomposition, and the
+a set of keys, that ordering fixed the eigendecomposition and the
 eigendecomposition fixed the prior.  Two runs of the same commit with the same
 seed came out at 0.257 m and 0.362 m of absolute trajectory error on EuRoC
-V1_01, which is a third of the number, and every within-process check passed
+V1_01, which is a third of the number and every within-process check passed
 happily throughout.
 
 So the test runs the estimator in two subprocesses with *deliberately

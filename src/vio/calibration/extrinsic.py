@@ -1,6 +1,6 @@
 """Camera-IMU rotational and translational extrinsic calibration.
 
-Rotation first, and separately, because it can be: rotation is the one part of
+Rotation first, on its own, because it can be: rotation is the one part of
 the extrinsic that is observable from *rotation alone*, with no scale, no
 translation and no structure involved.  For any pair of instants the camera and
 the body turn through related amounts::
@@ -10,11 +10,11 @@ the body turn through related amounts::
 Taking logarithms, ``theta_body = R_bc theta_cam`` for every pair, which is
 Procrustes: stack the two sets of rotation vectors and take the SVD.  This is
 the classical hand-eye result specialised to the case where only rotation is
-wanted, and it needs nothing more than a gyroscope and a visual rotation
+wanted and it needs nothing more than a gyroscope and a visual rotation
 estimate.  It is also what makes the rest tractable: with ``R_bc`` known to a
 degree, the translation is a well-behaved refinement rather than a search.
 
-Translation second, and jointly, because it is not separately observable.
+Translation second, jointly, because it is not separately observable.
 ``t_bc`` only enters through the lever-arm acceleration that rotation induces,
 so it needs the full visual-inertial problem: landmarks, poses, IMU factors and
 :class:`vio.backend.factors.ExtrinsicReprojectionFactor` with the extrinsic as
@@ -114,7 +114,7 @@ def refine(
     ``observations`` is a list of ``(pose_index, landmark_id, normalised_xy)``.
     ``fix_poses`` holds the trajectory and solves for the extrinsic and the
     structure only, which is the right thing when the poses came from a
-    trusted source such as ground truth, and the wrong thing when they came
+    trusted source such as ground truth and the wrong thing when they came
     from the very estimator being calibrated.
     """
     values = Values()
@@ -167,7 +167,7 @@ def excitation(body_rotations) -> np.ndarray:
     """Total unsigned rotation about each body axis, radians.
 
     A calibration run that never rotates about an axis cannot see the
-    translation component perpendicular to it, and reporting the number is the
+    translation component perpendicular to it and reporting the number is the
     difference between a calibration and a guess.
     """
     total = np.zeros(3)

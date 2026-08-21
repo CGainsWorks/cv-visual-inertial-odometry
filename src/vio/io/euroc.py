@@ -3,10 +3,10 @@
 Both datasets ship the same tree, ``mav0/<sensor>/data.csv`` plus a
 ``sensor.yaml`` per sensor, so one loader covers both.  The differences are
 that TUM VI uses an equidistant distortion model where EuRoC uses
-radial-tangential, and that TUM VI's ground truth is a raw motion-capture
+radial-tangential and that TUM VI's ground truth is a raw motion-capture
 stream rather than a batch-smoothed state estimate.  Both are handled.
 
-Three details in this format catch people out, and all three are handled here
+Three details in this format catch people out and all three are handled here
 rather than left to the caller:
 
 * **Timestamps are integer nanoseconds.**  Converting them to float seconds
@@ -97,7 +97,7 @@ class GroundTruth:
         """Nearest-sample pose, or ``None`` outside the covered interval.
 
         Nearest rather than interpolated: ground truth is at 200 Hz, so the
-        worst nearest-neighbour error is 2.5 ms of motion, and interpolating
+        worst nearest-neighbour error is 2.5 ms of motion and interpolating
         rotations invites a convention bug in a function whose whole job is to
         be beyond suspicion.
         """

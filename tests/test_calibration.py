@@ -69,7 +69,7 @@ def test_extrinsic_rotation_survives_gyro_noise():
 
 
 def test_tiny_rotations_are_excluded_rather_than_averaged_in():
-    """Below the threshold the logarithm is noise, and Procrustes weights every
+    """Below the threshold the logarithm is noise and Procrustes weights every
     pair by its magnitude squared, so a noise-only pair contributes pure noise
     at full weight."""
     rng = np.random.default_rng(1)

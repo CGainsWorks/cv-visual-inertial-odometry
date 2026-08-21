@@ -3,7 +3,7 @@
 
 Every result file already carries a per-stage breakdown, because the estimator
 times its own tracking, preintegration, triangulation, solve and
-marginalisation.  That answers "which stage", not "which function", and the
+marginalisation.  That answers "which stage", not "which function" and the
 second question is the one that tells you what to fix.  This runs cProfile over
 a bounded slice of a sequence and prints cumulative time by function, plus the
 stage timers alongside so the two views can be compared.

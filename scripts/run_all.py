@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Run every sequence in both configurations, in parallel, and summarise.
+"""Run every sequence in both configurations, in parallel and summarise.
 
 One process per run.  The estimator is single-threaded and numpy releases the
 GIL only for the larger array operations, so processes rather than threads is

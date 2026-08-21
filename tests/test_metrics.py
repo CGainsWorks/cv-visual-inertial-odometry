@@ -142,7 +142,7 @@ def test_rpe_is_zero_for_a_globally_transformed_trajectory():
 
 
 def test_rpe_by_distance_and_by_time_differ_when_the_platform_stops():
-    """A hovering platform accumulates time but not distance, and a time-based
+    """A hovering platform accumulates time but not distance and a time-based
     RPE rewards it for that."""
     t = np.linspace(0, 20, 401)
     poses = []

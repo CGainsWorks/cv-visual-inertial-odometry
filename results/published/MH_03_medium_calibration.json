@@ -1,0 +1,44 @@
+{
+  "sequence": "MH_03_medium",
+  "method": "visual odometry rotations against raw gyroscope; the published extrinsic is used only to score the result",
+  "frames_used": 1456,
+  "rotation": {
+    "pairs": 621,
+    "procrustes_residual_rad": 0.017318080231101953,
+    "estimated_rotvec_deg": [
+      -0.2632153394380636,
+      0.44987704552264296,
+      89.58086324052863
+    ],
+    "published_rotvec_deg": [
+      -0.9789994807869827,
+      1.3336697020767523,
+      89.13969167944305
+    ],
+    "error_deg": 1.1153307462899784,
+    "swept_per_axis_rad": [
+      19.084495740074694,
+      13.947457304717517,
+      17.522506293832105
+    ]
+  },
+  "temporal": {
+    "injected_offset_s": 0.0187,
+    "estimated_offset_s": 0.015652934684143898,
+    "error_s": -0.0030470653158561033,
+    "correlation": 0.9707193417516488,
+    "grid_resolution_s": 0.0003999999999999976,
+    "ok": true,
+    "reason": ""
+  },
+  "translation": {
+    "estimated": null,
+    "published_m": [
+      -0.0216401454975,
+      -0.064676986768,
+      0.00981073058949
+    ],
+    "note": "not estimated from real data; see docs/calibration.md"
+  },
+  "seconds": 398.89
+}

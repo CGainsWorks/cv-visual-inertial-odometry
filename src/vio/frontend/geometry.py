@@ -9,7 +9,7 @@ be sanity-checked by the caller.
 
 The RANSAC-wrapped estimators, essential matrix and PnP, are OpenCV's.
 Those are well-tested implementations of algorithms whose interesting content
-is the minimal solver, and swapping in a Python RANSAC loop would make the
+is the minimal solver and swapping in a Python RANSAC loop would make the
 front end ten times slower while making the *back end*, which is the part worth
 judging, no more mine than it already is.
 """
@@ -90,7 +90,7 @@ def refine_point(poses, bearings, point, iterations: int = 5):
 
     The DLT minimises an algebraic error, not reprojection error.  Three or
     four Newton steps on the geometric cost typically move the point by a few
-    millimetres at 5 m range, which is small but free, and it removes the
+    millimetres at 5 m range, which is small but free and it removes the
     algebraic-versus-geometric objection to seeding a bundle adjustment with a
     linear solution.
     """

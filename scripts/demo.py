@@ -3,12 +3,12 @@
 
 This is what ``make demo`` runs and what CI runs.  It generates a synthetic
 visual-inertial sequence, renders it, runs monocular visual odometry and then
-visual-inertial odometry over the same images, and prints the comparison that
+visual-inertial odometry over the same images and prints the comparison that
 the whole project exists to make:
 
 * visual-only has no scale, so it can only be scored after a similarity
   alignment that is *given* the true scale;
-* visual-inertial claims a metric trajectory, so it is scored rigidly, and its
+* visual-inertial claims a metric trajectory, so it is scored rigidly and its
   scale error is reported as a number rather than absorbed by the alignment.
 
 Runs in about ninety seconds on one core.  The numbers it prints come from

@@ -60,7 +60,7 @@ def test_partial_intervals_are_interpolated(clean_sequence):
     """A block over an interval that misses the sample grid still integrates exactly.
 
     Image timestamps do not land on IMU samples.  Rounding to the nearest
-    sample loses up to 5 ms of motion per keyframe at 200 Hz, and it loses it
+    sample loses up to 5 ms of motion per keyframe at 200 Hz and it loses it
     in the same direction every time.
     """
     seq = clean_sequence

@@ -1,6 +1,6 @@
 # Visual-inertial odometry from scratch.
 #
-# Three classes of target, and the distinction matters when reading the README:
+# Three classes of target; the distinction matters when reading the README:
 #
 #   FAST      seconds to a couple of minutes, no dataset needed.  Everything CI
 #             runs, plus the synthetic demo.
@@ -96,6 +96,11 @@ calibrate:  ## Estimate the camera-IMU extrinsic and time offset from a sequence
 .PHONY: ablate
 ablate:  ## The ablations behind the claims in docs/results.md
 	$(PYTHON) scripts/ablate.py --data $(EUROC_ROOT) --out $(RESULTS)
+
+.PHONY: ablate-marginalisation
+ablate-marginalisation:  ## Just the EuRoC marginal-prior comparison
+	$(PYTHON) scripts/ablate.py --only marginalisation_euroc \
+		--data $(EUROC_ROOT) --out $(RESULTS)
 
 .PHONY: seed-spread
 seed-spread:  ## How much the answer moves when only RANSAC's draws change

@@ -32,7 +32,7 @@ def test_hamming_is_symmetric_and_zero_on_the_diagonal():
 
 
 def test_majority_bits_minimises_total_hamming_distance():
-    """The binary analogue of the median, and the reason it is the centroid."""
+    """The binary analogue of the median and the reason it is the centroid."""
     rng = np.random.default_rng(1)
     block = rng.integers(0, 256, (25, 4), dtype=np.uint8)
     centre = majority_bits(block)
@@ -121,7 +121,7 @@ def test_training_is_deterministic():
 
 @pytest.fixture(scope="module")
 def loop_scene(rendered_sequence):
-    """A vocabulary trained on the same imagery, and a detector on top of it."""
+    """A vocabulary trained on the same imagery and a detector on top of it."""
     import cv2
 
     seq, images = rendered_sequence
@@ -183,7 +183,7 @@ def test_verification_recovers_the_relative_pose_from_correspondences():
 
     Records are built by hand so the descriptors match perfectly and the
     landmarks are exact.  What is under test is everything after matching: the
-    PnP, and the conversion from a camera-frame PnP result to the body-frame
+    PnP and the conversion from a camera-frame PnP result to the body-frame
     relative pose the pose graph consumes.  That conversion is two inversions
     and a conjugation and it is the easiest thing here to get backwards.
 
@@ -256,7 +256,7 @@ def test_retrieval_plumbing_runs_on_synthetic_imagery(loop_scene):
 
     The appearance *quality* does not; see :mod:`vio.sim.render`.  What this
     asserts is that the inverted index is populated, that querying it returns
-    only temporally distant keyframes, and that nothing raises.
+    only temporally distant keyframes and that nothing raises.
     """
     seq, images, vocab = loop_scene
     detector = LoopDetector(vocab, seq.config.camera, seq.config.T_body_cam,

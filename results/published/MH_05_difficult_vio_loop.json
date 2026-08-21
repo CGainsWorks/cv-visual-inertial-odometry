@@ -1,0 +1,180 @@
+{
+  "sequence": "MH_05_difficult",
+  "mode": "vio",
+  "vocabulary": {
+    "path": "models\\vocabulary.pkl",
+    "words": 9982,
+    "trained_on": [
+      "MH_01_easy",
+      "MH_02_easy"
+    ]
+  },
+  "wall_seconds": 466.7,
+  "keyframes": 976,
+  "revisit_opportunities": 692,
+  "revisit_episodes": 21,
+  "episodes_detected": 6,
+  "closures_emitted": 10,
+  "closures_correct": 10,
+  "precision": 1.0,
+  "recall": 0.2857,
+  "keyframe_recall": 0.0145,
+  "closures": [
+    {
+      "query": 57,
+      "match": 22,
+      "score": 0.1722,
+      "inliers": 26,
+      "matches": 58,
+      "correction_m": 0.417,
+      "true_distance_m": 0.493
+    },
+    {
+      "query": 74,
+      "match": 23,
+      "score": 0.2264,
+      "inliers": 23,
+      "matches": 49,
+      "correction_m": 0.112,
+      "true_distance_m": 0.321
+    },
+    {
+      "query": 85,
+      "match": 48,
+      "score": 0.3141,
+      "inliers": 35,
+      "matches": 66,
+      "correction_m": 0.325,
+      "true_distance_m": 0.013
+    },
+    {
+      "query": 113,
+      "match": 11,
+      "score": 0.2214,
+      "inliers": 20,
+      "matches": 55,
+      "correction_m": 0.699,
+      "true_distance_m": 0.156
+    },
+    {
+      "query": 124,
+      "match": 80,
+      "score": 0.1773,
+      "inliers": 23,
+      "matches": 48,
+      "correction_m": 0.187,
+      "true_distance_m": 0.285
+    },
+    {
+      "query": 135,
+      "match": 37,
+      "score": 0.2033,
+      "inliers": 23,
+      "matches": 43,
+      "correction_m": 0.779,
+      "true_distance_m": 0.724
+    },
+    {
+      "query": 817,
+      "match": 265,
+      "score": 0.2207,
+      "inliers": 20,
+      "matches": 65,
+      "correction_m": 2.322,
+      "true_distance_m": 0.596
+    },
+    {
+      "query": 937,
+      "match": 436,
+      "score": 0.2297,
+      "inliers": 22,
+      "matches": 47,
+      "correction_m": 2.36,
+      "true_distance_m": 0.983
+    },
+    {
+      "query": 960,
+      "match": 131,
+      "score": 0.1821,
+      "inliers": 25,
+      "matches": 57,
+      "correction_m": 2.621,
+      "true_distance_m": 0.45
+    },
+    {
+      "query": 971,
+      "match": 50,
+      "score": 0.2511,
+      "inliers": 32,
+      "matches": 56,
+      "correction_m": 2.454,
+      "true_distance_m": 0.029
+    }
+  ],
+  "ate_before": {
+    "ate_translation_m": {
+      "rmse": 1.1249257613490447,
+      "mean": 1.0649390922020183,
+      "median": 0.9303768112926502,
+      "std": 0.36243992391383895,
+      "min": 0.2255691524744313,
+      "max": 1.9019845594638436,
+      "n": 2152
+    },
+    "ate_rotation_deg": {
+      "rmse": 19.287557981739056,
+      "mean": 12.739932649666239,
+      "median": 8.62758523166655,
+      "std": 14.481160484605995,
+      "min": 3.7114672585625534,
+      "max": 102.32436746651767,
+      "n": 2152
+    },
+    "alignment": "se3",
+    "alignment_scale": 1.0,
+    "n_matched": 2152
+  },
+  "ate_after": {
+    "ate_translation_m": {
+      "rmse": 0.40361221447305273,
+      "mean": 0.37926995978131095,
+      "median": 0.357757282736762,
+      "std": 0.1380475181932813,
+      "min": 0.059157037222124634,
+      "max": 0.7687297671810569,
+      "n": 2152
+    },
+    "ate_rotation_deg": {
+      "rmse": 17.37248153876598,
+      "mean": 9.745713016065007,
+      "median": 5.345291236598296,
+      "std": 14.381383543430928,
+      "min": 0.5078592795609331,
+      "max": 98.84090825404826,
+      "n": 2152
+    },
+    "alignment": "se3",
+    "alignment_scale": 1.0,
+    "n_matched": 2152
+  },
+  "drift_before": {
+    "distance_m": 97.1691008623474,
+    "final_error_m": 1.841826686798223,
+    "final_per_metre": 0.018954859831495287,
+    "mean_per_metre": 0.010959647488254957
+  },
+  "drift_after": {
+    "distance_m": 97.1691008623474,
+    "final_error_m": 0.3751100196194139,
+    "final_per_metre": 0.0038603837669631807,
+    "mean_per_metre": 0.0039031951146547695
+  },
+  "pose_graph": {
+    "iterations": 26,
+    "seconds": 7.033,
+    "initial_cost": 742.8867151263203,
+    "final_cost": 582.9483643802052,
+    "max_displacement_m": 2.4615,
+    "gravity_locked": true
+  }
+}

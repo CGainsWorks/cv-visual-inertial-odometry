@@ -17,7 +17,7 @@ out here, because that is where the structure lives.
 The damping is Marquardt's, proportional to the diagonal of the Hessian
 rather than to the identity, so the step is invariant to how the variables
 happen to be scaled.  Position in metres and rotation in radians differ by
-roughly an order of magnitude in a typical Hessian here, and identity damping
+roughly an order of magnitude in a typical Hessian here and identity damping
 punishes whichever happens to be smaller.
 """
 

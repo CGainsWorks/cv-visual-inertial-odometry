@@ -2,7 +2,7 @@
 
 ASCII PLY.  It is the least interesting file format in this repository and the
 most widely readable one: MeshLab, CloudCompare, Open3D, Blender and numpy all
-take it without a converter, and a person can read it in a text editor to check
+take it without a converter and a person can read it in a text editor to check
 that the numbers are metres rather than something else.
 
 The map is a by-product of the estimator rather than a maintained structure.

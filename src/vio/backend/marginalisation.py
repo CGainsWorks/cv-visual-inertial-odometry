@@ -1,14 +1,14 @@
 """Marginalisation: turning states that leave the window into a linear prior.
 
 A fixed-lag smoother that simply *deletes* the oldest keyframe throws away
-every constraint that keyframe carried, and the window quietly becomes
+every constraint that keyframe carried and the window quietly becomes
 under-determined: nothing anchors the remaining states, so the whole thing
 drifts as a rigid body and the optimiser is happy about it.  Marginalisation is
 the alternative.  Eliminating a state from the linearised system leaves behind
-a Gaussian over everything that state touched, and that Gaussian becomes a
+a Gaussian over everything that state touched and that Gaussian becomes a
 factor.
 
-Concretely: order the variables as ``[keep, drop]``, form the Hessian, and take
+Concretely: order the variables as ``[keep, drop]``, form the Hessian and take
 the Schur complement::
 
     H' = H_kk - H_kd H_dd^-1 H_dk
@@ -27,7 +27,7 @@ sliding-window estimator slowly rotate its own gravity direction.
 
 **Unobservable directions must be dropped.**  A monocular visual-inertial
 system has four gauge freedoms: three of position and yaw about gravity.  The
-marginal Hessian is therefore rank deficient by four, and inverting it or
+marginal Hessian is therefore rank deficient by four and inverting it or
 taking its square root naively produces enormous numbers along the null space.
 The eigendecomposition below discards eigenvalues below a relative threshold,
 which keeps the prior informative in the directions it actually knows about and
@@ -61,7 +61,7 @@ def marginalise(graph, values: Values, drop_keys, tolerance: float = RANK_TOLERA
     """
     # Order matters and is preserved deliberately.  ``drop_keys`` fixes the
     # column ordering of the system below, that ordering fixes the
-    # eigendecomposition, and the eigendecomposition fixes the prior down to
+    # eigendecomposition and the eigendecomposition fixes the prior down to
     # the last bit.  Iterating a *set* of these keys instead makes the ordering
     # depend on Python's per-process string hash randomisation, which is how
     # two runs of the same commit with the same seed came out 0.257 and 0.362

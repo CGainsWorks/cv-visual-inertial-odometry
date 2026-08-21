@@ -1,13 +1,13 @@
 """SO(3) on the manifold.
 
 Everything downstream depends on these seven functions being right, so they are
-written out rather than imported, and the tests check them against finite
+written out rather than imported and the tests check them against finite
 differences and against scipy's rotation implementation.
 
 Convention, fixed once and used everywhere in this repository:
 
     a rotation is a 3x3 matrix ``R`` mapping body coordinates to world
-    coordinates, and it is perturbed *on the right*::
+    coordinates and it is perturbed *on the right*::
 
         R (+) d  ==  R @ Exp(d)
 
@@ -72,7 +72,7 @@ def log(R: np.ndarray) -> np.ndarray:
     w, v = _quaternion(R)
     n = float(np.linalg.norm(v))
     if n < _EPS:
-        # theta ~ 2n/w, and the direction v/n cancels against it.
+        # theta ~ 2n/w and the direction v/n cancels against it.
         return 2.0 * v / w if w != 0.0 else np.zeros(3)
     theta = 2.0 * np.arctan2(n, w)
     return (theta / n) * v

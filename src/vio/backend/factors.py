@@ -1,4 +1,4 @@
-"""Factors: a residual, the variables it touches, and its analytic Jacobians.
+"""Factors: a residual, the variables it touches and its analytic Jacobians.
 
 Every Jacobian here is written out by hand.  Every one of them is also checked
 against a central finite difference of its own residual in
@@ -11,7 +11,7 @@ factor's fifteen columns.
 Conventions, all inherited from :mod:`vio.backend.variables`:
 
 * poses retract as ``R <- R Exp(d_phi)``, ``p <- p + d_p``;
-* residuals are returned *unwhitened*, and the solver applies
+* residuals are returned *unwhitened* and the solver applies
   ``sqrt_info`` and the robust kernel;
 * the IMU residual orders its nine rows as ``[rotation, velocity, position]``,
   matching :class:`vio.imu.preintegration.Preintegrated`.
@@ -47,7 +47,7 @@ class HuberLoss(Loss):
     ``rho'`` multiplies the whitened residual and its Jacobian, which is what
     makes a single Gauss-Newton step on the reweighted system equal a step on
     the robustified cost.  It is not exact, the second-order term of ``rho``
-    is dropped, but dropping it is what keeps the Hessian positive definite,
+    is dropped but dropping it is what keeps the Hessian positive definite,
     and the alternative (Triggs correction) is fragile in exactly the
     high-residual regime the kernel exists to handle.
     """
@@ -169,7 +169,7 @@ class VectorPriorFactor(Factor):
 class ReprojectionFactor(Factor):
     """One landmark seen in one frame.
 
-    The measurement is an *undistorted normalised* image coordinate, and the
+    The measurement is an *undistorted normalised* image coordinate and the
     residual is scaled by the focal length so its units are pixels.  Keeping
     the residual in pixels matters for the robust kernel: a Huber threshold in
     normalised units would mean a different number of pixels on every camera.
@@ -453,7 +453,7 @@ class GravityDirectionFactor(Factor):
 
     A visual-inertial system observes gravity, so roll and pitch are
     absolutely referenced and do not drift; only position and yaw do.  A
-    six-degree-of-freedom pose graph does not know that, and given a loop to
+    six-degree-of-freedom pose graph does not know that and given a loop to
     close it will cheerfully tilt the entire map, trading a quantity it
     measures well for one it does not.
 

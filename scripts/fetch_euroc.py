@@ -3,10 +3,10 @@
 
 The per-sequence downloads at ``robotics.ethz.ch`` that every VIO tutorial
 links to are gone: ETH moved the dataset to their Research Collection in late
-2025, and it is now served as two large bundles rather than eleven small ones.
+2025 and it is now served as two large bundles rather than eleven small ones.
 This script resolves the current bitstream URLs through the repository's own
 API instead of hard-coding them, so it keeps working if the identifiers change
-again, and it extracts only the ASL-format archives, the ROS bags are roughly
+again.  It extracts only the ASL-format archives: the ROS bags are roughly
 half the bytes and nothing in this repository reads them.
 
     python scripts/fetch_euroc.py --out ~/datasets/euroc

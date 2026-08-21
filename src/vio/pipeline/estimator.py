@@ -4,7 +4,7 @@ One class runs both configurations the project compares.  With ``use_imu``
 false it is a monocular visual odometry that knows nothing about scale; with it
 true the same code path gains IMU factors, an initialisation step and a bias
 state.  Keeping them in one class rather than two is deliberate: the point of
-the comparison is what the inertial measurements buy, and that answer is worth
+the comparison is what the inertial measurements buy and that answer is worth
 nothing if the visual baseline is a different, weaker program.
 
 Life cycle
@@ -119,10 +119,10 @@ class EstimatorConfig:
     #:
     #: Without this the estimator has no way out of a dead end.  A keyframe
     #: that cannot be located is dropped, so the window's newest keyframe stays
-    #: where it was, and the IMU block for the *next* keyframe therefore spans
+    #: where it was and the IMU block for the *next* keyframe therefore spans
     #: an ever-longer interval.  On EuRoC MH_03 that turned into a run that
     #: never initialised and got quadratically slower as it went: by frame 300
-    #: it was integrating fifteen seconds of IMU per keyframe, and the whole
+    #: it was integrating fifteen seconds of IMU per keyframe and the whole
     #: sequence did not finish in half an hour.
     bootstrap_reset_failures: int = 6
     #: A gap this long between keyframes means the visual link is broken, and
@@ -144,7 +144,7 @@ class EstimatorConfig:
     #: that uses OpenCV RANSAC -- the loop-closure detector, for instance --
     #: shifts the draws the estimator sees and changes the trajectory slightly.
     #: Seeding at construction pins the draws; it does not make the estimator
-    #: insensitive to them, and ``scripts/seed_spread.py`` measures how
+    #: insensitive to them and ``scripts/seed_spread.py`` measures how
     #: sensitive it is.  Reproducibility across processes additionally needs
     #: nothing to depend on Python's hash randomisation, which is a separate
     #: story told in ``vio.backend.marginalisation``.
@@ -265,7 +265,7 @@ class Estimator:
 
         # Loop closure runs alongside rather than inside the sliding window,
         # which is how VINS-Mono arranges it too: the window is a fixed-lag
-        # smoother with a bounded cost per keyframe, and a loop correction is a
+        # smoother with a bounded cost per keyframe and a loop correction is a
         # global operation over every keyframe ever seen.  Mixing them would
         # make the per-keyframe cost unbounded.
         self.loop_detector = None
@@ -276,7 +276,7 @@ class Estimator:
         self.keyframe_stamps: dict = {}
         #: Every landmark's final position, recorded as it leaves the window.
         #: The window itself holds at most ``max_landmarks``; this is the map
-        #: the run actually built, and it is what gets written out.
+        #: the run actually built and it is what gets written out.
         self.map_points: dict = {}
 
     # -- public -----------------------------------------------------------
@@ -317,7 +317,7 @@ class Estimator:
 
         With ``initialised_only`` the bootstrap frames are dropped.  They are
         in the same coordinate frame as everything else, the alignment is
-        applied retrospectively, but they were produced by visual odometry
+        applied retrospectively but they were produced by visual odometry
         with no scale, so including them measures a different system from the
         one being reported on.
         """
@@ -521,7 +521,7 @@ class Estimator:
                 self._try_inertial_alignment()
             else:
                 # Visual-only has nothing to align.  Once there is a stable
-                # window of structure it is running, and saying so is what
+                # window of structure it is running and saying so is what
                 # switches it to the cheaper per-keyframe iteration budget and
                 # the steady-state window size.
                 self.state = "RUNNING"
@@ -563,7 +563,7 @@ class Estimator:
             return False
 
         # Camera 0 is the origin.  The scale is whatever recoverPose's unit
-        # translation implies; the inertial alignment fixes it later, and for
+        # translation implies; the inertial alignment fixes it later and for
         # the visual-only baseline it never gets fixed at all, which is the
         # honest state of a monocular system.
         T_wc0 = Pose.identity()
@@ -602,7 +602,7 @@ class Estimator:
         # 60-metre landmark cap the bootstrap was silently discarding
         # everything past 2.4 real metres, in an eight-metre room.  Fixing the
         # median depth at one makes the bootstrap thresholds ratios, which is
-        # the only thing a monocular map can meaningfully express, and it
+        # the only thing a monocular map can meaningfully express and it
         # conditions the bundle adjustment better as a side effect.
         depths = np.array([
             float((T_wc0.R.T @ (p - T_wc0.t))[2]) for p in points.values()
@@ -681,7 +681,7 @@ class Estimator:
                 self.values[key] = PointVariable(Ra @ (s * self.values.vector(key)))
         # Frames already emitted are in the bootstrap frame, which is neither
         # metric nor gravity aligned.  Leaving them there makes the output
-        # trajectory a mixture of two coordinate systems, and any global
+        # trajectory a mixture of two coordinate systems and any global
         # alignment done during evaluation then tries to fit both at once --
         # which showed up as a constant 15 degrees of apparent rotation error
         # on a run whose actual gravity tilt was under two.  The same
@@ -952,19 +952,19 @@ class Estimator:
         """Marginalise the departing keyframe's inertial states into a prior.
 
         Only the *inertial* factors are marginalised, the IMU block, the bias
-        random walk, and the previous prior, not the departing keyframe's
+        random walk and the previous prior, not the departing keyframe's
         landmark observations.
 
         That is a deliberate simplification and it is worth being straight
         about.  Marginalising the visual factors too is the textbook thing to
-        do, and it is what VINS-Mono does with an inverse-depth
+        do and it is what VINS-Mono does with an inverse-depth
         parameterisation that lets most landmarks be dropped outright.  Doing
         it naively here means every landmark the old keyframe shared with the
         window enters the prior, which turns a 15 x 15 dense factor into a
         550 x 550 one: measured on the synthetic sequence that took the
         per-keyframe solve from 26 ms to 1042 ms, for an accuracy change
         smaller than the run-to-run spread.  The IMU block is the factor that
-        actually carries scale and gravity across the window boundary, and that
+        actually carries scale and gravity across the window boundary and that
         one is kept.
 
         ``scripts/ablate.py --only backend`` compares this against no

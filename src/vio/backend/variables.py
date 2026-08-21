@@ -12,7 +12,7 @@ point on the product manifold ``SO(3) x R^3``::
 
 rather than ``T <- T Exp(xi)``, which couples the two.  Both are valid
 retractions and both converge to the same minimum; the decoupled one gives
-markedly simpler Jacobians for the IMU and reprojection factors, and the
+markedly simpler Jacobians for the IMU and reprojection factors and the
 translation block of the resulting Hessian is better scaled because a
 translation step means the same thing regardless of the current attitude.
 ``vio.geometry.se3`` keeps the exponential form for the places that genuinely
@@ -44,12 +44,12 @@ class Variable:
     def local_jacobian(self, other):
         """``d local(self, other) / d(other retraction)``.
 
-        The identity for a Euclidean variable, and *not* the identity for a
+        The identity for a Euclidean variable and *not* the identity for a
         pose: displacing the target rotation by ``Exp(d)`` moves the local
         coordinates by ``Jr^-1(phi) d``, not by ``d``.  A marginal prior
         evaluated away from its linearisation point needs this to differentiate
-        correctly, and dropping it, which is the usual shortcut, costs
-        about three parts in ten thousand at a millimetre of displacement.
+        correctly.  Dropping it, which is the usual shortcut, costs about
+        three parts in ten thousand at a millimetre of displacement.
         """
         return np.eye(other.dim)
 

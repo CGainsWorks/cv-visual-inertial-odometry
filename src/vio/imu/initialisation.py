@@ -4,11 +4,11 @@ This is the step where from-scratch VIO usually dies, so it is worth being
 explicit about what is and is not observable.
 
 A monocular camera gives rotation *metrically*, rotations have no scale
-ambiguity, and translation only up to one global scale factor.  An IMU gives
+ambiguity and translation only up to one global scale factor.  An IMU gives
 metric acceleration but cannot separate a constant acceleration from gravity
 without motion.  Put together over a window with genuine translational
 excitation, the pair fixes four things that neither fixes alone: the gyroscope
-bias, the direction of gravity, the metric scale, and the velocity at every
+bias, the direction of gravity, the metric scale and the velocity at every
 keyframe.  Yaw about gravity stays unobservable forever, which is why the
 result is rotated into a gravity-aligned frame with an arbitrary heading rather
 than pretending to know north.
@@ -36,7 +36,7 @@ here from the relations rather than ported:
    left out, on the standard-sounding argument that over a short window a bias
    and a tilt of gravity look almost the same, so solving for both would make
    the system badly conditioned rather than more informative.  Measuring it
-   said otherwise, and emphatically.  With a 0.55 m/s^2 bias, which is what
+   said otherwise, emphatically so.  With a 0.55 m/s^2 bias, which is what
    EuRoC's own ground truth reports for V1_01:
 
    ==============  ===============  =============  =============
@@ -54,7 +54,7 @@ here from the relations rather than ported:
    go to zero.  The condition number does rise, from about 200 to about 665 at
    twelve keyframes, so the worry was not baseless.  It was simply outweighed: a bias
    that is not solved for does not go away, it is absorbed by the scale and by
-   the gravity direction, and those are the two things the whole procedure
+   the gravity direction and those are the two things the whole procedure
    exists to produce.  The estimate is discarded if it exceeds ``max_acc_bias``,
    on the grounds that no real accelerometer has a 1.5 m/s^2 bias and something
    else has been absorbed instead.
@@ -167,7 +167,7 @@ def _tangent_basis(v: np.ndarray) -> np.ndarray:
 
 def _linear_alignment(poses_wc, T_body_cam: Pose, preintegrated,
                       refine_gravity: bool, acc_bias: bool = False):
-    """Solve for ``[v_0..v_n, g, s]``, and optionally the accelerometer bias.
+    """Solve for ``[v_0..v_n, g, s]`` and optionally the accelerometer bias.
 
     Adding the accelerometer bias costs three more columns and keeps the system
     linear, because the preintegrated deltas depend on it to first order

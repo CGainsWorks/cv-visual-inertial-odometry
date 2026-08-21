@@ -104,7 +104,7 @@ def test_too_few_keyframes_is_refused(init_sequence):
 
 
 def test_a_stationary_window_is_refused():
-    """No translational excitation means no observable scale, and saying so is
+    """No translational excitation means no observable scale and saying so is
     the whole point of the excitation gate."""
     from vio.sim.trajectory import Sinusoid, Trajectory
 

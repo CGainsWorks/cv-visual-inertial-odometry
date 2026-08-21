@@ -12,7 +12,7 @@ false one folds the map onto itself and nothing downstream can recover.
 Three filters, in increasing cost:
 
 1. **Temporal exclusion.**  Keyframes within ``min_gap`` of the query are the
-   ones the estimator already constrains directly, and they always score
+   ones the estimator already constrains directly and they always score
    highest.  They are removed before anything else happens.
 
 2. **Relative scoring.**  An absolute bag-of-words threshold means different
@@ -127,11 +127,11 @@ class LoopDetector:
 
     # -- population --------------------------------------------------------
     def describe(self, image: np.ndarray, landmark_uv=None, landmark_points_cam=None):
-        """ORB features for retrieval, and which of them have a 3-D position.
+        """ORB features for retrieval and which of them have a 3-D position.
 
         The map descriptors are a *subset of the detections*, not descriptors
         computed at the landmark positions.  That distinction is the difference
-        between the geometric verification working and not working, and the
+        between the geometric verification working and not working and the
         first version got it wrong.  A descriptor computed at an arbitrary
         pixel, wherever a tracked landmark happens to project, describes a
         patch that no detector would have chosen, so it does not match the

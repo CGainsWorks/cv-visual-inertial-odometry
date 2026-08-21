@@ -58,7 +58,7 @@ class FactorGraph:
 
 @dataclass
 class LinearSystem:
-    """The result of linearising a graph: ``J``, ``r``, and where things live."""
+    """The result of linearising a graph: ``J``, ``r`` and where things live."""
 
     J: sp.csr_matrix
     r: np.ndarray

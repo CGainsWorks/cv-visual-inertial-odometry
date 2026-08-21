@@ -133,7 +133,10 @@ def main() -> int:
                 document = ROOT / doc_name
                 if not document.exists():
                     continue
-                text = document.read_text(encoding="utf-8")
+                # Collapse whitespace first.  These patterns describe
+                # sentences; a sentence that re-wraps because a number got
+                # one digit longer has not changed its claim.
+                text = " ".join(document.read_text(encoding="utf-8").split())
                 match = re.search(pattern, text)
                 if not match:
                     if label not in OPTIONAL_CLAIMS:

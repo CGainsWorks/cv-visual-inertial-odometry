@@ -18,8 +18,10 @@ import json
 import os
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -108,7 +110,7 @@ def ablate_frontend(args) -> dict:
     """What the gyro-predicted KLT guess is worth, against frame rate.
 
     Needs the dataset: the whole point is that the answer depends on how much
-    the camera moves between frames, and that is a property of the recording.
+    the camera moves between frames and that is a property of the recording.
     """
     root = Path(args.data) / args.frontend_sequence
     if not root.is_dir():
@@ -179,12 +181,12 @@ def ablate_frontend(args) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# 3. Back end: vectorised groups, and marginalisation
+# 3. Back end: vectorised groups and marginalisation
 # ---------------------------------------------------------------------------
 
 
 def ablate_backend(args) -> dict:
-    """Two claims: the group is faster, and marginalisation matters."""
+    """Two claims: the group is faster and marginalisation matters."""
     out = {}
 
     # -- speed of the vectorised group -----------------------------------
@@ -313,7 +315,7 @@ def ablate_initialisation(args) -> dict:
 
     It was left out originally, on the argument that a bias and a gravity tilt
     look almost the same over a short window.  The measurement says the
-    opposite, and says it loudly, so the argument is preserved here as a table
+    opposite and says it loudly, so the argument is preserved here as a table
     rather than as an assertion.
     """
     from vio.imu.initialisation import initialise
@@ -362,12 +364,119 @@ def ablate_initialisation(args) -> dict:
     return {"rows": rows}
 
 
+#: Worker processes must inherit these *before* they start, because the limits
+#: are read when the numerical libraries are first imported.  Setting them
+#: inside the worker function is too late: on a spawn platform the child has
+#: already imported numpy by the time the function runs; every worker then
+#: opens its own thread pool.  Four workers each spawning four BLAS threads
+#: oversubscribe the machine badly enough to be slower than running serially.
+SINGLE_THREAD_ENV = (
+    "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS",
+)
+
+
+def pin_to_one_thread() -> None:
+    """Pin the numerical libraries in this process and any it spawns."""
+    for name in SINGLE_THREAD_ENV:
+        os.environ[name] = "1"
+
+
+# ---------------------------------------------------------------------------
+# 6. Marginalisation, on real sequences
+# ---------------------------------------------------------------------------
+
+
+def _marginalisation_run(job):
+    sequence, keep, data = job
+    cv2.setNumThreads(1)
+    loaded = euroc.load(Path(data) / sequence, stereo=False)
+    cam = loaded.cam0
+    cfg = EstimatorConfig(use_imu=True, marginalise=keep)
+    est = Estimator(cam.camera, cam.T_body_cam, loaded.imu, loaded.imu_noise,
+                    cfg)
+    for i in range(len(cam)):
+        est.process(cam.image(i), float(cam.times[i]), i)
+    times, poses = est.poses(initialised_only=True)
+    gt = loaded.groundtruth
+    gt_poses = [Pose(R, p) for R, p in zip(gt.rotations, gt.positions)]
+    rigid = ate(times, poses, gt.times, gt_poses, mode="se3")
+    similar = ate(times, poses, gt.times, gt_poses, mode="sim3")
+    timing = est.timing.as_dict()
+    return {
+        "sequence": sequence,
+        "marginalise": keep,
+        "ate_rmse_m": rigid.translation.rmse,
+        "rotation_rmse_deg": rigid.rotation_deg.rmse,
+        "scale_error_percent": 100.0 * abs(similar.scale - 1.0),
+        "ms_per_keyframe": timing["ms_optimise_per_keyframe"]
+        + timing["ms_marginalise_per_keyframe"],
+        "poses": int(len(times)),
+    }
+
+
+def ablate_marginalisation_euroc(args) -> dict:
+    """Does the marginal prior earn its place on a real sequence?
+
+    The generated-sequence comparison in ``backend`` says no: dropping the
+    prior scores better on ATE and costs slightly less.  Twenty-five seconds of
+    synthetic flight is a weak place to settle that, because the window never
+    travels far enough for the information the prior carries to be worth much,
+    so the question is put again here to two full EuRoC sequences.
+
+    Runs are parallel because accuracy is deterministic and does not care how
+    many share the machine.  The millisecond column does care, so read it as a
+    ratio between the two rows of a pair rather than as an absolute cost; the
+    absolute numbers live in the timing table, which comes from ``make
+    timing``.
+    """
+    missing = [s for s in args.marginalisation_sequences
+               if not (Path(args.data) / s).is_dir()]
+    if missing:
+        print()
+        print(f"Marginalisation on EuRoC: skipped, no data for "
+              f"{', '.join(missing)}")
+        return {"skipped": True, "missing": missing}
+
+    jobs = [(s, keep, args.data)
+            for s in args.marginalisation_sequences for keep in (True, False)]
+    print()
+    print(f"Marginalisation, on {len(args.marginalisation_sequences)} EuRoC "
+          f"sequences ({len(jobs)} runs on {args.jobs} workers)")
+    print(f"{'sequence':16s} {'marginalise':>11s} {'ATE rmse':>10s} "
+          f"{'rot rmse':>10s} {'scale err':>10s} {'ms/keyframe':>12s}")
+    rows = []
+    pin_to_one_thread()
+    with ProcessPoolExecutor(max_workers=args.jobs) as pool:
+        for row in pool.map(_marginalisation_run, jobs):
+            rows.append(row)
+    for row in sorted(rows, key=lambda r: (r["sequence"], not r["marginalise"])):
+        print(f"{row['sequence']:16s} {str(row['marginalise']):>11s} "
+              f"{row['ate_rmse_m']:10.4f} {row['rotation_rmse_deg']:10.3f} "
+              f"{row['scale_error_percent']:9.2f}% "
+              f"{row['ms_per_keyframe']:12.1f}")
+
+    verdict = {}
+    for sequence in args.marginalisation_sequences:
+        pair = {r["marginalise"]: r for r in rows if r["sequence"] == sequence}
+        if len(pair) == 2:
+            verdict[sequence] = round(
+                100.0 * (pair[False]["ate_rmse_m"] - pair[True]["ate_rmse_m"])
+                / pair[False]["ate_rmse_m"], 1)
+    for sequence, delta in verdict.items():
+        better = "better" if delta > 0 else "worse"
+        print(f"  {sequence}: keeping the prior is {abs(delta):.1f}% {better} "
+              f"on ATE")
+    return {"rows": rows, "ate_change_percent": verdict}
+
+
 ABLATIONS = {
     "initialisation": ablate_initialisation,
     "integration": ablate_integration,
     "frontend": ablate_frontend,
     "backend": ablate_backend,
     "window": ablate_window,
+    "marginalisation_euroc": ablate_marginalisation_euroc,
 }
 
 
@@ -381,6 +490,10 @@ def main() -> int:
     ap.add_argument("--duration", type=float, default=25.0)
     ap.add_argument("--frontend-sequence", default="V1_02_medium")
     ap.add_argument("--frontend-frames", type=int, default=600)
+    ap.add_argument("--marginalisation-sequences", nargs="*",
+                    default=["V1_01_easy", "V1_02_medium"])
+    ap.add_argument("--jobs", type=int,
+                    default=max((os.cpu_count() or 4) // 2, 1))
     args = ap.parse_args()
 
     results = {}

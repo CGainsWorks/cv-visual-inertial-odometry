@@ -17,7 +17,7 @@ the readable one.
 Only reprojection factors are grouped.  There are at most a few dozen IMU and
 prior factors in a window against a thousand visual ones, so grouping them
 would complicate the code for no measurable gain, which is the sort of claim
-that should be checked rather than assumed, and the profile in
+that should be checked rather than assumed and the profile in
 ``docs/results.md`` is where it was.
 """
 

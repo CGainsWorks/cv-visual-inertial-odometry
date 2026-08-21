@@ -115,7 +115,7 @@ def test_se3_exp_log_roundtrip():
 def test_se3_log_is_a_group_inverse_at_a_half_turn():
     """At exactly pi the logarithm is two-valued, so only the group law holds.
 
-    ``+pi a`` and ``-pi a`` name the same rotation, and they give *different*
+    ``+pi a`` and ``-pi a`` name the same rotation and they give *different*
     translation components through ``V(phi)``.  So ``log(exp(xi)) == xi`` is
     not a theorem there and asserting it would be asserting a convention, not
     a correctness property.  What must hold is that the pose is recovered.

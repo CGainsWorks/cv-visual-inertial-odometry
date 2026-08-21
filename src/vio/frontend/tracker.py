@@ -2,21 +2,21 @@
 
 What is borrowed and what is not, stated plainly because it is the honest part
 of a "from scratch" claim.  The pyramidal Lucas-Kanade solver itself is
-OpenCV's ``calcOpticalFlowPyrLK``, and so is Shi-Tomasi corner detection.
+OpenCV's ``calcOpticalFlowPyrLK`` and so is Shi-Tomasi corner detection.
 Rewriting either in Python would run two orders of magnitude slower and teach
 nothing that is not in the original 1991 paper.  Everything around them is
 here: the forward-backward consistency test, the spacing mask that stops every
 corner piling onto one high-contrast object, the track lifecycle, the two-view
-outlier rejection, the keyframe policy, and the gyroscope-predicted initial
+outlier rejection, the keyframe policy and the gyroscope-predicted initial
 guess.
 
-That last one is worth a paragraph, and the paragraph is not the one it
+That last one is worth a paragraph and the paragraph is not the one it
 started as.  KLT begins its search at the feature's previous pixel position,
 which is a poor guess when the camera is rotating fast.  Because this is a
 *visual-inertial* system there is a gyroscope available, so integrating it
 across the frame interval predicts where each feature will land, up to
 translation parallax.  Measured on EuRoC, that prediction does more than
-halve the initial guess error, 11.6 px to 5.3 px on V1_02, but it buys **no
+halve the initial guess error, 11.6 px to 5.3 px on V1_02 but it buys **no
 additional tracked features at all** at the native 20 fps, because the
 displacement is already comfortably inside a 21x21 window at the top of a
 four-level pyramid.  Decimating the stream to simulate faster motion shows
@@ -33,8 +33,8 @@ stride       eff. fps   tracked, no gyro    with gyro       gain
 ===========  =========  ==================  ==============  ======
 
 So it is off by default: on this dataset it costs about a quarter of the front
-end's runtime and returns nothing.  It is kept, and kept tested, because the
-conclusion is a property of EuRoC's frame rate rather than of the idea, and a
+end's runtime and returns nothing.  It is kept, tested, because the
+conclusion is a property of EuRoC's frame rate rather than of the idea and a
 rolling-shutter phone camera at 5 fps would want it on.
 ``scripts/ablate.py --only frontend`` regenerates that table.
 """
@@ -272,11 +272,11 @@ class Tracker:
         #
         # The result is only accepted if it keeps most of its input.  A
         # fundamental matrix is itself degenerate when the scene is planar or
-        # the baseline is tiny, and in that case RANSAC does not fail loudly --
+        # the baseline is tiny and in that case RANSAC does not fail loudly --
         # it returns a confident, arbitrary model and throws away most of the
         # correspondences.  Measured on a deliberately planar synthetic scene
         # it discarded 34 tracks per frame while the forward-backward test was
-        # discarding three, and mean track length collapsed from thirty frames
+        # discarding three and mean track length collapsed from thirty frames
         # to five.  When the model rejects more than this fraction, the model
         # is the thing that is wrong, not the tracks.
         if len(uv) >= 12:
@@ -320,7 +320,7 @@ class Tracker:
         """Drop tracks last seen before ``before_frame``.
 
         Without this the dictionary grows without bound: EuRoC MH_01 produces
-        about 90 000 tracks over 3600 frames, and holding every dead one costs
+        about 90 000 tracks over 3600 frames and holding every dead one costs
         several hundred megabytes by the end.
         """
         dead = [k for k, t in self.tracks.items() if t.last_frame < before_frame]

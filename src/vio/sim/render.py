@@ -1,4 +1,4 @@
-"""Rendering synthetic frames, and writing a sequence out in ASL format.
+"""Rendering synthetic frames and writing a sequence out in ASL format.
 
 What these images are: a textured scene built from thousands of small patches
 stuck to the walls of the simulated room, each patch a different mixture of
@@ -10,11 +10,11 @@ rolling shutter, auto-exposure or illumination change.  Every one of those is a
 real failure mode of a real front end and none of them is exercised here.
 These images exist so continuous integration can run the *whole* pipeline --
 detector, tracker, initialiser, back end, evaluation, on a machine with no
-dataset, and so a front-end regression shows up as a test failure rather than
+dataset and so a front-end regression shows up as a test failure rather than
 as a worse number on EuRoC three weeks later.  Every quantitative claim in the
 README comes from EuRoC, not from these.
 
-Two properties took several attempts to get right, and both are properties a
+Two properties took several attempts to get right and both are properties a
 naive renderer gets wrong in a way that silently breaks tracking rather than
 looking wrong:
 
@@ -32,19 +32,19 @@ scene therefore carries several thousand texture points beyond the landmarks
 the analytic tests use; the tracker finds its own corners in the result, which
 is what it does on a real image too.
 
-There is one thing these images are measurably *not* good enough for, and it is
+There is one thing these images are measurably *not* good enough for and it is
 worth stating rather than discovering: **ORB descriptors do not match across
 them**.  Between two frames ten apart, EuRoC V1_01 yields 386 ratio-test
-matches out of 600 detections; this renderer yields about 25, and no amount of
+matches out of 600 detections; this renderer yields about 25 and no amount of
 adjusting the frequency content, the envelope width or the patch statistics
 moved it, band-limited noise patches did no better than the sinusoid mixtures
 used here.  The cause is structural: the patches are stuck to points but never
-warp with viewpoint, and they overlap, so the *mixture* a 31-pixel descriptor
+warp with viewpoint and they overlap, so the *mixture* a 31-pixel descriptor
 window sees changes from frame to frame even though each patch does not.  KLT
 is unaffected because it works at a smaller scale and re-anchors every frame,
 which is why tracking is fine here and place recognition is not.
 
-The consequence is that loop closure is exercised on EuRoC, and on these images
+The consequence is that loop closure is exercised on EuRoC and on these images
 only as far as the plumbing, retrieval, indexing, the pose graph.  Fixing it
 properly means rendering textured *surfaces* with a real homography warp per
 frame rather than pasting fixed patches, which is a different and much larger

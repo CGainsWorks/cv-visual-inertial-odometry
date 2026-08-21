@@ -12,7 +12,7 @@ strongest available answer.
 Two kinds of difference are distinguished, because only one of them is a
 problem.
 
-* **Same association, different answer.**  The metric is wrong, and the script
+* **Same association, different answer.**  The metric is wrong and the script
   fails.
 * **Different association.**  The two never applied the metric to the same
   data, so the difference is a tie-break rather than an error.
@@ -20,7 +20,7 @@ problem.
 On the EuRoC set that distinction is not academic.  Twenty-six of thirty
 comparisons agree to 1.8e-15 metres, which is round-off.  The remaining four
 are all MH_01, where exactly one estimate sits on the 20 ms association
-boundary: ours keeps it, evo does not, and the resulting ATE differs by up to
+boundary: ours keeps it, evo does not and the resulting ATE differs by up to
 2.2 mm on 3639 pairs against 3638.
 
     python evaluation/evo_check.py --results results

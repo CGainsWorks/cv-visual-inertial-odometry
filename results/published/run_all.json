@@ -1,0 +1,130 @@
+[
+  {
+    "sequence": "MH_01_easy",
+    "mode": "vio",
+    "returncode": 0,
+    "seconds": 607.9,
+    "stdout": "\nMH_01_easy [vio] 3662 poses, 602.3 s (144 ms/frame)\n  ATE se3  rmse 1.1454 m   median 0.5203 m\n  ATE sim3 rmse 1.1207 m   scale 0.9461\n  map: 5806 landmarks\n  wrote results\\MH_01_easy_vio.tum, results\\MH_01_easy_vio_map.ply and results\\MH_01_easy_vio.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "MH_01_easy",
+    "mode": "vo",
+    "returncode": 0,
+    "seconds": 426.4,
+    "stdout": "\nMH_01_easy [vo] 3678 poses, 420.7 s (99 ms/frame)\n  ATE se3  rmse 3.5002 m   median 3.5082 m\n  ATE sim3 rmse 2.3155 m   scale 3.6047\n  map: 5787 landmarks\n  wrote results\\MH_01_easy_vo.tum, results\\MH_01_easy_vo_map.ply and results\\MH_01_easy_vo.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "MH_02_easy",
+    "mode": "vio",
+    "returncode": 0,
+    "seconds": 507.7,
+    "stdout": "\nMH_02_easy [vio] 3021 poses, 502.9 s (146 ms/frame)\n  ATE se3  rmse 0.5445 m   median 0.3653 m\n  ATE sim3 rmse 0.5192 m   scale 0.9657\n  map: 5407 landmarks\n  wrote results\\MH_02_easy_vio.tum, results\\MH_02_easy_vio_map.ply and results\\MH_02_easy_vio.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "MH_02_easy",
+    "mode": "vo",
+    "returncode": 0,
+    "seconds": 349.3,
+    "stdout": "\nMH_02_easy [vo] 3035 poses, 344.6 s (99 ms/frame)\n  ATE se3  rmse 4.9584 m   median 4.8021 m\n  ATE sim3 rmse 0.6704 m   scale 0.4834\n  map: 5312 landmarks\n  wrote results\\MH_02_easy_vo.tum, results\\MH_02_easy_vo_map.ply and results\\MH_02_easy_vo.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "MH_03_medium",
+    "mode": "vio",
+    "returncode": 0,
+    "seconds": 559.4,
+    "stdout": "\nMH_03_medium [vio] 2608 poses, 555.1 s (185 ms/frame)\n  ATE se3  rmse 0.7135 m   median 0.6279 m\n  ATE sim3 rmse 0.6960 m   scale 0.9572\n  map: 7904 landmarks\n  wrote results\\MH_03_medium_vio.tum, results\\MH_03_medium_vio_map.ply and results\\MH_03_medium_vio.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "MH_03_medium",
+    "mode": "vo",
+    "returncode": 0,
+    "seconds": 403.1,
+    "stdout": "\nMH_03_medium [vo] 2639 poses, 398.8 s (130 ms/frame)\n  ATE se3  rmse 3.1253 m   median 2.5013 m\n  ATE sim3 rmse 0.7580 m   scale 7.4584\n  map: 7949 landmarks\n  wrote results\\MH_03_medium_vo.tum, results\\MH_03_medium_vo_map.ply and results\\MH_03_medium_vo.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "MH_04_difficult",
+    "mode": "vio",
+    "returncode": 0,
+    "seconds": 380.7,
+    "stdout": "\nMH_04_difficult [vio] 1977 poses, 377.4 s (166 ms/frame)\n  ATE se3  rmse 1.3382 m   median 1.1607 m\n  ATE sim3 rmse 1.3009 m   scale 0.9554\n  map: 5668 landmarks\n  wrote results\\MH_04_difficult_vio.tum, results\\MH_04_difficult_vio_map.ply and results\\MH_04_difficult_vio.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "MH_04_difficult",
+    "mode": "vo",
+    "returncode": 0,
+    "seconds": 109.3,
+    "stdout": "\nMH_04_difficult [vo] 1993 poses, 105.9 s (48 ms/frame)\n  ATE se3  rmse 6.8064 m   median 4.8351 m\n  ATE sim3 rmse 6.7921 m   scale 2.7193\n  map: 588 landmarks\n  wrote results\\MH_04_difficult_vo.tum, results\\MH_04_difficult_vo_map.ply and results\\MH_04_difficult_vo.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "MH_05_difficult",
+    "mode": "vio",
+    "returncode": 0,
+    "seconds": 386.0,
+    "stdout": "\nMH_05_difficult [vio] 2175 poses, 382.3 s (150 ms/frame)\n  ATE se3  rmse 1.1249 m   median 0.9304 m\n  ATE sim3 rmse 1.1126 m   scale 0.9764\n  map: 4986 landmarks\n  wrote results\\MH_05_difficult_vio.tum, results\\MH_05_difficult_vio_map.ply and results\\MH_05_difficult_vio.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "MH_05_difficult",
+    "mode": "vo",
+    "returncode": 0,
+    "seconds": 265.4,
+    "stdout": "\nMH_05_difficult [vo] 2191 poses, 261.8 s (101 ms/frame)\n  ATE se3  rmse 2.5909 m   median 2.1855 m\n  ATE sim3 rmse 2.3716 m   scale 0.8619\n  map: 4860 landmarks\n  wrote results\\MH_05_difficult_vo.tum, results\\MH_05_difficult_vo_map.ply and results\\MH_05_difficult_vo.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "V1_01_easy",
+    "mode": "vio",
+    "returncode": 0,
+    "seconds": 530.5,
+    "stdout": "\nV1_01_easy [vio] 2766 poses, 526.7 s (163 ms/frame)\n  ATE se3  rmse 0.2722 m   median 0.2355 m\n  ATE sim3 rmse 0.2666 m   scale 0.9708\n  map: 7771 landmarks\n  wrote results\\V1_01_easy_vio.tum, results\\V1_01_easy_vio_map.ply and results\\V1_01_easy_vio.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "V1_01_easy",
+    "mode": "vo",
+    "returncode": 0,
+    "seconds": 397.7,
+    "stdout": "\nV1_01_easy [vo] 2804 poses, 393.5 s (119 ms/frame)\n  ATE se3  rmse 1.3997 m   median 1.2575 m\n  ATE sim3 rmse 1.1090 m   scale 2.3669\n  map: 7423 landmarks\n  wrote results\\V1_01_easy_vo.tum, results\\V1_01_easy_vo_map.ply and results\\V1_01_easy_vo.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "V1_02_medium",
+    "mode": "vio",
+    "returncode": 0,
+    "seconds": 417.8,
+    "stdout": "\nV1_02_medium [vio] 1607 poses, 415.1 s (223 ms/frame)\n  ATE se3  rmse 0.3365 m   median 0.2775 m\n  ATE sim3 rmse 0.3061 m   scale 0.9270\n  map: 12498 landmarks\n  wrote results\\V1_02_medium_vio.tum, results\\V1_02_medium_vio_map.ply and results\\V1_02_medium_vio.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "V1_02_medium",
+    "mode": "vo",
+    "returncode": 0,
+    "seconds": 296.9,
+    "stdout": "\nV1_02_medium [vo] 1617 poses, 294.1 s (153 ms/frame)\n  ATE se3  rmse 4.8997 m   median 1.5514 m\n  ATE sim3 rmse 1.1347 m   scale 0.2263\n  map: 12157 landmarks\n  wrote results\\V1_02_medium_vo.tum, results\\V1_02_medium_vo_map.ply and results\\V1_02_medium_vo.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "V1_03_difficult",
+    "mode": "vio",
+    "returncode": 0,
+    "seconds": 442.3,
+    "stdout": "\nV1_03_difficult [vio] 1979 poses, 439.9 s (189 ms/frame)\n  ATE se3  rmse 0.3805 m   median 0.2462 m\n  ATE sim3 rmse 0.3670 m   scale 0.9383\n  map: 18861 landmarks\n  wrote results\\V1_03_difficult_vio.tum, results\\V1_03_difficult_vio_map.ply and results\\V1_03_difficult_vio.json\n",
+    "stderr": ""
+  },
+  {
+    "sequence": "V1_03_difficult",
+    "mode": "vo",
+    "returncode": 0,
+    "seconds": 119.6,
+    "stdout": "\nV1_03_difficult [vo] 2001 poses, 116.2 s (50 ms/frame)\n  ATE se3  rmse 1.5330 m   median 1.2279 m\n  ATE sim3 rmse 1.5194 m   scale 1.9997\n  map: 855 landmarks\n  wrote results\\V1_03_difficult_vo.tum, results\\V1_03_difficult_vo_map.ply and results\\V1_03_difficult_vo.json\n",
+    "stderr": ""
+  }
+]

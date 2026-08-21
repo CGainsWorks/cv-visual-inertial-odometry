@@ -9,7 +9,7 @@ the two ever diverge, that is a finding rather than an inconvenience.
 Three definitions, because they are where evaluations quietly differ:
 
 **Association.**  Estimated and reference trajectories are sampled on different
-clocks.  Each estimate is matched to the nearest reference sample, and pairs
+clocks.  Each estimate is matched to the nearest reference sample and pairs
 further apart than ``max_difference`` are dropped rather than interpolated.
 EuRoC's ground truth runs at 200 Hz, so the worst unmatched error is 2.5 ms of
 motion.
@@ -25,7 +25,7 @@ everywhere in this repository.
 
 **Relative pose error.**  Computed over fixed *distance* intervals by default
 rather than fixed time intervals.  A drone that hovers for ten seconds
-accumulates almost no error in that time, and time-based RPE rewards it for
+accumulates almost no error in that time and time-based RPE rewards it for
 that; distance-based RPE does not.
 """
 
@@ -117,7 +117,7 @@ class RpeResult:
 
 #: Relative slack on the association tolerance.
 #:
-#: A sample sitting exactly on the boundary is a knife edge, and floating-point
+#: A sample sitting exactly on the boundary is a knife edge and floating-point
 #: noise decides which side it falls.  That is not hypothetical: writing a
 #: trajectory to a TUM file and reading it back perturbs the timestamps by
 #: about 3e-14 s, which was enough to flip one borderline pair on EuRoC MH_01
@@ -132,7 +132,7 @@ def associate(est_times, ref_times, max_difference: float = 0.02):
     """Nearest-neighbour association between two time series.
 
     Returns ``(est_indices, ref_indices)``.  Each estimate is used at most
-    once, and each reference sample at most once: without the second condition
+    once and each reference sample at most once: without the second condition
     a fast estimate against slow ground truth maps many estimates onto one
     reference sample and the error statistics silently reweight themselves.
     """
@@ -301,7 +301,7 @@ def drift_rate(est_times, est_poses, ref_times, ref_poses,
 
     The headline number the brief asks for.  Two versions are reported because
     they answer different questions: the *final* error per metre is what a
-    navigation system cares about, and the *mean* is what a mapping system
+    navigation system cares about and the *mean* is what a mapping system
     cares about.  Quoting only the smaller of the two is the usual sleight of
     hand.
     """

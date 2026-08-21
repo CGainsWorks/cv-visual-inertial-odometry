@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """Train a bag-of-words vocabulary from ORB descriptors.
 
-Which sequences the vocabulary is trained on matters, and the default here is
+Which sequences the vocabulary is trained on matters and the default here is
 deliberate: **Machine Hall 01 and 02 only**.  Loop closure is then evaluated on
-Vicon Room, which is a different room, and on Machine Hall 03 to 05, which are
+Vicon Room, which is a different room, as well as on Machine Hall 03 to 05, which are
 different runs.  Training the vocabulary on the sequence you then report
 loop-closure recall for is a way to make a place recogniser look better than it
-is, and the split is recorded in the vocabulary file so a reader can check.
+is and the split is recorded in the vocabulary file so a reader can check.
 
     python scripts/build_vocabulary.py --sequences MH_01_easy MH_02_easy
     python scripts/build_vocabulary.py --sim          # for CI, no dataset needed

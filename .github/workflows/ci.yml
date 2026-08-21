@@ -4,7 +4,7 @@ name: ci
 #
 # It runs everything that does not need the dataset: linting, the unit tests --
 # which include the finite-difference checks on every Jacobian, the Monte Carlo
-# check on the preintegration covariance, and the cross-check of our own
+# check on the preintegration covariance and the cross-check of our own
 # trajectory metrics against evo -- and the whole pipeline end to end on a
 # synthetic sequence generated in-process.
 #
@@ -77,15 +77,38 @@ jobs:
           python scripts/run_sequence.py sim_sequence --data /tmp \
             --mode vio --out /tmp/sim_results --quiet
 
-      - name: The same seed gives the same trajectory
+      - name: Changing the RANSAC seed changes nothing
         run: python -m pytest tests/test_pipeline.py -q -k ransac
 
-      - name: ...in a different process, with a different hash seed
+      - name: ...nor does a different process with a different hash seed
         run: python -m pytest tests/test_reproducibility.py -q
 
-      - name: Vocabulary trains and detects on synthetic imagery
+      - name: Vocabulary trains and the loop pipeline runs end to end
         run: |
           python scripts/build_vocabulary.py --sim --depth 3 \
             --out /tmp/vocab.pkl --quiet
           python scripts/run_loop_closure.py --sim --duration 45 \
             --vocabulary /tmp/vocab.pkl --out /tmp/loop_results --quiet
+
+      - name: ...on a circuit that genuinely revisits itself
+        run: |
+          python - <<'PY'
+          import json
+          d = json.load(open("/tmp/loop_results/sim_loop_vio_loop.json"))
+          assert d["vocabulary"]["words"] > 100, d["vocabulary"]
+          assert d["keyframes"] > 100, d["keyframes"]
+          # The generated path closes exactly once per lap, so revisit
+          # opportunities must exist.  That the detector converts none of
+          # them is the documented limitation of synthetic texture rather
+          # than a failure here.  Asserting on the opportunities is what
+          # stops this step passing vacuously, which is what it did when
+          # the estimator never initialised and every number was nan.
+          assert d["revisit_episodes"] > 0, d["revisit_episodes"]
+          ate = d["ate_before"]["ate_translation_m"]
+          assert ate["n"] > 100, ate
+          assert ate["rmse"] < 1.5, ate
+          print("loop pipeline ok:", d["keyframes"], "keyframes,",
+                d["revisit_episodes"], "revisit episodes,",
+                d["closures_emitted"], "closures, ATE",
+                round(ate["rmse"], 4))
+          PY

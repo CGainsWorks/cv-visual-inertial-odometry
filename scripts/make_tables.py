@@ -356,6 +356,30 @@ def table_seed_spread(runs: dict, ablations: dict, results: Path) -> str:
     return LINE_BREAK.join(lines)
 
 
+def table_marginalisation_euroc(runs: dict, ablations: dict,
+                                results: Path) -> str:
+    data = ablations.get("marginalisation_euroc", {})
+    rows = data.get("rows")
+    if not rows:
+        return ("_No EuRoC marginalisation comparison yet.  Run "
+                "`make ablate-marginalisation`._")
+    lines = [
+        "| sequence | marginal prior | ATE (m) | rotation (deg) | scale error "
+        "| per keyframe |",
+        "| --- | --- | ---: | ---: | ---: | ---: |",
+    ]
+    order = sorted(rows, key=lambda r: (r["sequence"], not r["marginalise"]))
+    for r in order:
+        kept = "kept" if r["marginalise"] else "dropped"
+        lines.append(
+            f"| `{r['sequence']}` | {kept} | {r['ate_rmse_m']:.4f} | "
+            f"{r['rotation_rmse_deg']:.2f} | "
+            f"{r['scale_error_percent']:.2f}% | "
+            f"{r['ms_per_keyframe']:.0f} ms |"
+        )
+    return LINE_BREAK.join(lines)
+
+
 def table_loop(runs: dict, ablations: dict, results: Path) -> str:
     rows = []
     for path in sorted(results.glob("*_loop.json")):
@@ -415,6 +439,7 @@ GENERATORS = {
     "backend": lambda runs, abl, res: table_ablation_backend(runs, abl),
     "window": lambda runs, abl, res: table_ablation_window(runs, abl),
     "seed_spread": table_seed_spread,
+    "marginalisation_euroc": table_marginalisation_euroc,
     "loop": table_loop,
     "calibration": table_calibration,
 }
@@ -456,7 +481,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", default=str(ROOT / "results"))
     ap.add_argument("--check", action="store_true",
-                    help="report drift without writing, and exit non-zero")
+                    help="report drift without writing and exit non-zero")
     args = ap.parse_args()
 
     tables = render(Path(args.results))

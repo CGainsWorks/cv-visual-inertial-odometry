@@ -16,7 +16,7 @@ Scaramuzza, *On-Manifold Preintegration for Real-Time Visual-Inertial
 Odometry*, T-RO 2017, with right perturbation throughout to match
 :mod:`vio.geometry.so3`.
 
-Two integration schemes are implemented, and the difference between them is
+Two integration schemes are implemented and the difference between them is
 measured rather than asserted: ``scripts/ablate.py --only integration``
 regenerates the table in ``docs/results.md``.
 
@@ -35,7 +35,7 @@ rotating them by the start-of-interval attitude makes velocity *worse* than
 plain Euler, not better.  The two accelerations have to be rotated into the
 reference frame separately, by the attitude at their own end of the interval,
 before being averaged.  The bias Jacobians below are derived for that scheme
-rather than borrowed from the Euler one, and ``tests/test_preintegration.py``
+rather than borrowed from the Euler one and ``tests/test_preintegration.py``
 checks them against a finite difference of a full re-integration.
 
 Bias handling deserves a note too.  The deltas are integrated once at a
@@ -76,7 +76,7 @@ class Preintegrated:
     #: Covariance of ``[d_phi, d_v, d_p]``, in that order.
     cov: np.ndarray = field(default_factory=lambda: np.zeros((9, 9)))
 
-    # First-order bias Jacobians.  ``J_v_ba`` is d(dv)/d(b_acc), and so on.
+    # First-order bias Jacobians.  ``J_v_ba`` is d(dv)/d(b_acc) and so on.
     J_R_bg: np.ndarray = field(default_factory=lambda: np.zeros((3, 3)))
     J_v_ba: np.ndarray = field(default_factory=lambda: np.zeros((3, 3)))
     J_v_bg: np.ndarray = field(default_factory=lambda: np.zeros((3, 3)))
@@ -135,7 +135,7 @@ class Preintegrated:
         # -- covariance ----------------------------------------------------
         # Propagated with the Forster structure evaluated at the averaged
         # measurement.  The midpoint rule reduces the *variance* of the
-        # effective interval measurement, and consecutive intervals share an
+        # effective interval measurement and consecutive intervals share an
         # endpoint sample so that reduction is correlated; both effects are
         # ignored here, which leaves the covariance mildly conservative.  How
         # mildly is measured against a Monte Carlo in
@@ -185,7 +185,7 @@ class Preintegrated:
         The first and last intervals are partial: an image timestamp does not
         land on an IMU sample, so the measurements are interpolated to the
         exact boundary rather than the interval being rounded to the nearest
-        sample.  At 200 Hz that is up to 5 ms of motion per keyframe, and it
+        sample.  At 200 Hz that is up to 5 ms of motion per keyframe and it
         does not average out, it biases every interval the same way.
         """
         t = np.asarray(imu.t, dtype=float)

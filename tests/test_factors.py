@@ -1,7 +1,7 @@
 """Every analytic Jacobian against a central finite difference.
 
 This is the test that makes the back end believable.  A Jacobian that is
-almost right produces an optimiser that almost converges, and the symptom --
+almost right produces an optimiser that almost converges and the symptom --
 slow convergence, or a solution that is subtly biased, looks exactly like a
 tuning problem.  Checking each one against a finite difference of its own
 residual, at randomised linearisation points, is cheap and conclusive.

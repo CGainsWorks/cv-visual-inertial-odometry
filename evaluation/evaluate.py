@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Recompute every metric from the trajectory files on disk.
 
-The runs in ``results/`` already contain their metrics, but those were computed
+The runs in ``results/`` already contain their metrics but those were computed
 by the same process that produced the trajectory.  This script starts again
 from the ``.tum`` files alone, which is the form a reader can check with their
 own tools.  If it disagrees with the stored numbers, something is wrong with

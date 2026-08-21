@@ -92,7 +92,7 @@ def test_noise_free_configuration_really_is_noise_free():
 
 
 def test_scene_is_not_degenerate_for_the_fundamental_matrix():
-    """Six exactly flat walls make each view planar, and a plane admits a
+    """Six exactly flat walls make each view planar and a plane admits a
     one-parameter family of fundamental matrices.
 
     RANSAC does not fail loudly on that, it returns a confident, arbitrary
@@ -125,7 +125,7 @@ def test_inter_frame_pixel_motion_is_trackable():
     """The default motion must sit in the range KLT can resolve.
 
     Seventeen pixels per frame against a 25-pixel feature spacing is where an
-    earlier version of these defaults sat, and the tracker mismatched
+    earlier version of these defaults sat and the tracker mismatched
     neighbouring features on nearly every track while reporting success.
     """
     seq = simulate(SimConfig(duration=8.0, seed=10))

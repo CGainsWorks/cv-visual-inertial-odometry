@@ -1,0 +1,162 @@
+{
+  "sequence": "V1_02_medium",
+  "mode": "vio",
+  "vocabulary": {
+    "path": "models\\vocabulary.pkl",
+    "words": 9982,
+    "trained_on": [
+      "MH_01_easy",
+      "MH_02_easy"
+    ]
+  },
+  "wall_seconds": 577.4,
+  "keyframes": 1356,
+  "revisit_opportunities": 1347,
+  "revisit_episodes": 317,
+  "episodes_detected": 38,
+  "closures_emitted": 8,
+  "closures_correct": 8,
+  "precision": 1.0,
+  "recall": 0.1199,
+  "keyframe_recall": 0.0059,
+  "closures": [
+    {
+      "query": 274,
+      "match": 227,
+      "score": 0.2073,
+      "inliers": 21,
+      "matches": 63,
+      "correction_m": 0.203,
+      "true_distance_m": 0.551
+    },
+    {
+      "query": 462,
+      "match": 424,
+      "score": 0.2897,
+      "inliers": 20,
+      "matches": 56,
+      "correction_m": 0.141,
+      "true_distance_m": 0.339
+    },
+    {
+      "query": 477,
+      "match": 423,
+      "score": 0.3254,
+      "inliers": 21,
+      "matches": 61,
+      "correction_m": 0.249,
+      "true_distance_m": 0.459
+    },
+    {
+      "query": 489,
+      "match": 424,
+      "score": 0.3079,
+      "inliers": 23,
+      "matches": 68,
+      "correction_m": 0.264,
+      "true_distance_m": 0.251
+    },
+    {
+      "query": 1130,
+      "match": 494,
+      "score": 0.2956,
+      "inliers": 20,
+      "matches": 59,
+      "correction_m": 0.603,
+      "true_distance_m": 0.385
+    },
+    {
+      "query": 1142,
+      "match": 533,
+      "score": 0.3027,
+      "inliers": 30,
+      "matches": 56,
+      "correction_m": 0.495,
+      "true_distance_m": 0.8
+    },
+    {
+      "query": 1215,
+      "match": 605,
+      "score": 0.2684,
+      "inliers": 20,
+      "matches": 60,
+      "correction_m": 0.664,
+      "true_distance_m": 0.445
+    },
+    {
+      "query": 1248,
+      "match": 725,
+      "score": 0.3248,
+      "inliers": 25,
+      "matches": 83,
+      "correction_m": 0.609,
+      "true_distance_m": 0.357
+    }
+  ],
+  "ate_before": {
+    "ate_translation_m": {
+      "rmse": 0.33645701748165413,
+      "mean": 0.31039742282717636,
+      "median": 0.2775218114463289,
+      "std": 0.12983360318075296,
+      "min": 0.07144477679273845,
+      "max": 1.056801357683149,
+      "n": 1588
+    },
+    "ate_rotation_deg": {
+      "rmse": 11.492196533871432,
+      "mean": 7.296529805392096,
+      "median": 5.114380443431048,
+      "std": 8.878695510724045,
+      "min": 0.2607361525354629,
+      "max": 58.850437538225414,
+      "n": 1588
+    },
+    "alignment": "se3",
+    "alignment_scale": 1.0,
+    "n_matched": 1588
+  },
+  "ate_after": {
+    "ate_translation_m": {
+      "rmse": 0.26660244081073775,
+      "mean": 0.23065629751958192,
+      "median": 0.21605824002188573,
+      "std": 0.13369567629808018,
+      "min": 0.00824821889968512,
+      "max": 1.0775592710139217,
+      "n": 1588
+    },
+    "ate_rotation_deg": {
+      "rmse": 11.119209429649251,
+      "mean": 6.761304906192651,
+      "median": 4.589401774942795,
+      "std": 8.8273197690973,
+      "min": 0.2508306032425378,
+      "max": 58.26917366454807,
+      "n": 1588
+    },
+    "alignment": "se3",
+    "alignment_scale": 1.0,
+    "n_matched": 1588
+  },
+  "drift_before": {
+    "distance_m": 75.7206249352729,
+    "final_error_m": 0.21982093816464987,
+    "final_per_metre": 0.0029030523500374705,
+    "mean_per_metre": 0.004099245391760945
+  },
+  "drift_after": {
+    "distance_m": 75.7206249352729,
+    "final_error_m": 0.22389249685616874,
+    "final_per_metre": 0.0029568231515198842,
+    "mean_per_metre": 0.003046148888981705
+  },
+  "pose_graph": {
+    "iterations": 10,
+    "seconds": 3.746,
+    "initial_cost": 107.7457207842053,
+    "final_cost": 55.59733847501178,
+    "max_displacement_m": 0.6975,
+    "gravity_locked": true
+  }
+}

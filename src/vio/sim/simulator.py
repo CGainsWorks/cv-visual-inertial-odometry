@@ -1,6 +1,6 @@
 """A synthetic visual-inertial sequence with exact ground truth.
 
-This is the most useful file in the repository during development, and the
+This is the most useful file in the repository during development and the
 reason the estimator converged at all.  Real data gives you one number at the
 end and no way to tell which of eight components produced it.  This gives every
 component an exact answer to be checked against:
@@ -69,7 +69,7 @@ class SimConfig:
     min_depth: float = 1.5
     seed: int = 0
 
-    #: Room half-extents in x and y, and height in z.  Landmarks are scattered
+    #: Room half-extents in x and y and height in z.  Landmarks are scattered
     #: on the six faces, which is a closer match to a real indoor scene than a
     #: cloud floating in the middle of the room would be.
     #:
@@ -78,7 +78,7 @@ class SimConfig:
     #: motion in the range KLT can actually resolve against a field of isolated
     #: blobs, about six pixels at 20 Hz, which is what EuRoC's own sequences
     #: do.  An earlier version of these defaults produced seventeen pixels per
-    #: frame, past half the blob spacing, and the tracker mismatched
+    #: frame, past half the blob spacing and the tracker mismatched
     #: neighbouring blobs on almost every feature.  The assertion in
     #: ``tests/test_io_and_sim.py`` keeps it in range.
     room: tuple = (8.5, 7.0, 3.4)
@@ -169,11 +169,11 @@ CLUTTER_FRACTION = 0.35
 #: Standard deviation of the displacement applied to wall points, in metres.
 #:
 #: This is not cosmetic.  Six exactly flat walls make the scene *planar over
-#: any single view*, and a plane is a degenerate configuration for the
+#: any single view* and a plane is a degenerate configuration for the
 #: fundamental matrix: it admits a one-parameter family of solutions, so
 #: RANSAC returns a confident and arbitrary one.  With 0.06 m of jitter the
 #: front end's two-view check was discarding 34 tracks per frame on synthetic
-#: images against 0.2 per frame on EuRoC, and mean track length was five frames
+#: images against 0.2 per frame on EuRoC and mean track length was five frames
 #: against thirty.  The scene has to have real depth structure, which is what
 #: the clutter boxes and this larger jitter provide.
 WALL_ROUGHNESS = 0.35

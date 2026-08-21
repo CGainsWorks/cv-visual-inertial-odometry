@@ -7,7 +7,7 @@ The estimator never works in pixels internally.  The front end tracks on the
 raw distorted image, because that is what the pixels actually look like and
 resampling a whole 752x480 frame per iteration to avoid a four-term polynomial
 is a poor trade.  The tracked pixel coordinates are then lifted to *undistorted
-normalised* coordinates once, and everything downstream, triangulation,
+normalised* coordinates once.  Everything downstream, triangulation,
 reprojection residuals, PnP, works there.  Residuals are scaled back by the
 focal length at the end so the numbers printed are pixels, which is the only
 unit anyone can judge by eye.
@@ -125,7 +125,7 @@ class PinholeCamera:
     def distort_jacobian(self, xn: np.ndarray) -> np.ndarray:
         """``d(distorted) / d(undistorted)``, an ``(N, 2, 2)`` stack.
 
-        Used to invert the distortion by Newton iteration, and by the
+        Used to invert the distortion by Newton iteration and by the
         calibration module when intrinsics are being refined.
         """
         xn = np.atleast_2d(np.asarray(xn, dtype=float))
@@ -173,7 +173,7 @@ class PinholeCamera:
 
         Written out rather than handed to ``cv2.undistortPoints`` for two
         reasons.  OpenCV 5 dropped the Python binding that let you set the
-        iteration count, and its default five fixed-point steps leave about a
+        iteration count and its default five fixed-point steps leave about a
         tenth of a pixel of error at the corners of the EuRoC images, larger
         than the feature-tracking noise the estimator is trying to model, which
         would put a systematic bias into every residual.  The Newton iteration

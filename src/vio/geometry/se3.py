@@ -6,7 +6,7 @@ separately and packing them into a homogeneous matrix only to unpack it again
 costs more than it saves.
 
 The convention matches :mod:`vio.geometry.so3`: a pose maps body coordinates to
-world coordinates, ``p_world = R @ p_body + t``, and it is perturbed on the
+world coordinates, ``p_world = R @ p_body + t`` and it is perturbed on the
 right with the translation part expressed in the *body* frame::
 
     T (+) xi  ==  T @ Exp(xi),      xi = [rotation (3), translation (3)]

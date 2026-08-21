@@ -15,7 +15,7 @@ import numpy as np
 
 from .geometry import Pose
 
-#: World gravity.  ``z`` is up, so gravity points down, and this is the value
+#: World gravity.  ``z`` is up, so gravity points down and this is the value
 #: EuRoC was recorded under (Zurich, ~9.81 m/s^2).  It is a module constant
 #: rather than a magic number scattered through the preintegration because the
 #: sign convention is the single easiest thing to get wrong in a VIO.
@@ -128,7 +128,7 @@ class ImuData:
 
     Stored column-wise rather than as a list of records because every consumer
     wants whole arrays: the preintegration walks them in a loop, the
-    initialiser takes means over them, and the calibration shifts the timestamps
+    initialiser takes means over them and the calibration shifts the timestamps
     wholesale.
     """
 
@@ -150,7 +150,7 @@ class ImuData:
         """Samples in ``[t0, t1)``, plus the sample bracketing each end.
 
         Returning the bracketing samples matters: an image timestamp almost
-        never lands exactly on an IMU sample, and dropping the partial interval
+        never lands exactly on an IMU sample and dropping the partial interval
         at each end loses up to 5 ms of motion per keyframe at 200 Hz, which
         integrates into a real bias.
         """

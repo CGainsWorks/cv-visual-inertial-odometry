@@ -3,7 +3,7 @@
 These are the tests that would catch a change which breaks the system as a
 whole without breaking any single component, a convention flipped in two
 places that cancel out in the unit tests, for instance.  The thresholds are
-loose on purpose: this is a regression guard, and the numbers that matter are
+loose on purpose: this is a regression guard and the numbers that matter are
 in ``docs/results.md`` and come from EuRoC.
 """
 
@@ -177,15 +177,22 @@ def test_marginalisation_can_be_turned_off(rendered_sequence):
 
 
 @pytest.mark.slow
-def test_the_ransac_seed_is_the_only_source_of_variation(rendered_sequence):
-    """Same seed, same trajectory.  Different seed, different trajectory.
+def test_the_trajectory_does_not_depend_on_the_ransac_seed(rendered_sequence):
+    """The seed is wired through and it turns out to change nothing.
 
-    Everything here is deterministic except the random sampling inside
-    OpenCV's RANSAC, and that generator is global to the process, so anything
-    else using it shifts the draws the estimator sees.  Seeding at construction
-    makes a run reproducible; it does not make the estimator insensitive, which
-    is why ``scripts/seed_spread.py`` exists and why every ATE in the documents
-    carries a measured spread.
+    The front end's two-view check and its PnP both run under RANSAC, which is
+    nominally the one stochastic thing in the pipeline, so ``ransac_seed`` is
+    passed to ``cv2.setRNGSeed`` at construction.  Measured, it makes no
+    difference: OpenCV 5 samples these through USAC rather than through the
+    global generator.  ``scripts/seed_spread.py`` finds the same on EuRoC,
+    where five seeds on each of two sequences give an ATE identical to every
+    digit printed.
+
+    A failure here is informative rather than mysterious.  It would mean the
+    installed OpenCV does consume the seeded generator, so the claim in
+    docs/results.md section 1a that one run is the whole answer has expired and
+    the sweep needs re-running before any two numbers in the documents can be
+    compared.
     """
     seq, images = rendered_sequence
     frames = list(zip(images[:90], seq.frames[:90]))
@@ -205,10 +212,15 @@ def test_the_ransac_seed_is_the_only_source_of_variation(rendered_sequence):
     assert np.abs(a - b).max() == 0.0
 
     c_times, c = run(7)
-    if len(c) == len(a):
-        # It may land in the same place, but it is not required to, and the
-        # point of the test is that the seed is wired through at all.
-        assert np.abs(a - c).max() >= 0.0
+    assert np.array_equal(a_times, c_times), (
+        "a different RANSAC seed changed how many poses came out; see the "
+        "docstring, the determinism claim in the documents needs re-measuring"
+    )
+    assert np.abs(a - c).max() == 0.0, (
+        f"a different RANSAC seed moved the trajectory by "
+        f"{np.abs(a - c).max():.3e} m; see the docstring, the determinism "
+        f"claim in the documents needs re-measuring"
+    )
 
 
 def test_estimator_refuses_imu_mode_without_imu_data(rendered_sequence):

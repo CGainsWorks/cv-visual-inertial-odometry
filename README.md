@@ -3,7 +3,7 @@
 > ### Clean-room reimplementation
 > This repository is an **independent reimplementation of a problem class**, built from
 > scratch on personal time using public data and open-source libraries. It is **not**
-> derived from, and contains no material belonging to, any employer or client: no
+> derived from and contains no material belonging to any employer or client: no
 > employer source code, schematics, calibration data, client data or internal
 > documentation. It exists to demonstrate the architecture and engineering approach only.
 
@@ -19,11 +19,14 @@ visual-inertial, through the same code path**. A monocular camera recovers the
 *shape* of a trajectory and cannot recover its *size*; the entire contribution
 of the inertial measurements is that missing number, so the honest way to show
 it is to score the visual baseline with a similarity alignment that is handed
-the true scale, score the visual-inertial result rigidly, and put the two side
+the true scale, score the visual-inertial result rigidly and put the two side
 by side.
 
 <!-- table:headline -->
-_No results yet.  Run `make experiments`, then `make tables`._
+Across the 8 EuRoC sequences the visual-inertial configuration reaches a mean
+absolute trajectory error of **0.732 m** under rigid alignment and recovers
+metric scale to within **4.5 per cent**, at about **103 ms per frame** on one
+core.
 <!-- /table:headline -->
 
 ### What it looks like
@@ -46,11 +49,11 @@ _No results yet.  Run `make experiments`, then `make tables`._
 | **Initialisation** | Gyroscope bias from rotation alone, then a linear solve for gravity, metric scale and per-keyframe velocity, then a tangent-plane refinement enforcing the gravity magnitude. Refuses when scale is unobservable |
 | **Loop closure** | Vocabulary tree over ORB descriptors trained by binary k-means, TF-IDF inverted index, DBoW2 scoring, geometric verification by PnP under RANSAC, four-degree-of-freedom pose graph |
 | **Calibration** | Camera-IMU rotation by orthogonal Procrustes on rotation increments; time offset by angular-rate correlation with sub-frame interpolation, plus a feature-velocity refinement |
-| **Outputs** | Per-frame 6-DoF trajectory in TUM format, the sparse landmark map as PLY, loop-closure events, and a JSON record carrying every metric, the timing breakdown and the commit |
-| **Evaluation** | ATE, RPE over distance intervals, Umeyama alignment with and without scale, drift per metre, all written out and cross-checked against `evo`: 26 of 30 comparisons agree to 1.8e-15 m |
-| **Datasets** | EuRoC MAV, run end to end. The loader also reads TUM VI's layout and its equidistant distortion model, but no TUM VI sequence has been run and no TUM VI number is quoted |
-| **Simulator** | Analytic trajectory with exact derivatives, IMU measurement generation, a textured renderer, and an ASL-format writer so the real dataset loader can be tested against known values |
-| **Reporting** | One pass per sequence, no per-sequence tuning; every table regenerated from the result files by `make tables`, and `make docs-check` fails if a document has drifted |
+| **Outputs** | Per-frame 6-DoF trajectory in TUM format, the sparse landmark map as PLY, loop-closure events and a JSON record carrying every metric, the timing breakdown and the commit |
+| **Evaluation** | ATE, RPE over distance intervals, Umeyama alignment with and without scale, drift per metre, all written out and cross-checked against `evo`: 28 of 32 comparisons agree to 1.8e-15 m |
+| **Datasets** | EuRoC MAV, run end to end. The loader also reads TUM VI's layout and its equidistant distortion model but no TUM VI sequence has been run and no TUM VI number is quoted |
+| **Simulator** | Analytic trajectory with exact derivatives, IMU measurement generation, a textured renderer and an ASL-format writer so the real dataset loader can be tested against known values |
+| **Reporting** | One pass per sequence, no per-sequence tuning; every table regenerated from the result files by `make tables` and `make docs-check` fails if a document has drifted |
 
 Nothing here has touched hardware. Every number comes from EuRoC or, where
 labelled, from the simulator.
@@ -94,40 +97,67 @@ Full tables, both alignments, every sequence: **[docs/results.md](docs/results.m
 Monocular, `cam0` only, one pass per sequence, no per-sequence tuning.
 
 <!-- table:euroc -->
-_No results yet.  Run `make experiments`._
+| sequence | length | VIO ATE (m) | VIO scale err | VIO rot (deg) | VO ATE, sim3 (m) | VO scale |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `MH_01_easy` | 81 m | **1.145** | 5.4% | 18.49 | 2.316 | 3.60x |
+| `MH_02_easy` | 73 m | **0.544** | 3.4% | 8.23 | 0.670 | 0.48x |
+| `MH_03_medium` | 130 m | **0.714** | 4.3% | 9.03 | 0.758 | 7.46x |
+| `MH_04_difficult` | 91 m | **1.338** | 4.5% | 11.82 | 6.792 | 2.72x |
+| `MH_05_difficult` | 97 m | **1.125** | 2.4% | 19.29 | 2.372 | 0.86x |
+| `V1_01_easy` | 58 m | **0.272** | 2.9% | 10.48 | 1.109 | 2.37x |
+| `V1_02_medium` | 76 m | **0.336** | 7.3% | 11.49 | 1.135 | 0.23x |
+| `V1_03_difficult` | 78 m | **0.381** | 6.2% | 10.23 | 1.519 | 2.00x |
+| **mean** | | **0.732** | 4.5% | 12.38 | 2.084 | |
 <!-- /table:euroc -->
 
-Every ATE above is a single run, and its error bar is measured rather than
-assumed: the only thing that is not deterministic here is the random sampling
-inside OpenCV's RANSAC, and `make seed-spread` varies nothing but its seed.
-[§1a](docs/results.md#1a-how-firm-are-those-numbers) has the spread; read
-everything else against it.
+Every ATE above is a single run and that single run is the whole number,
+not a sample of one. The estimator turns out to have no stochastic component
+at all: five seeds on V1_01 and five on V1_02 return an ATE identical to every
+digit shown, while two processes with different `PYTHONHASHSEED` values agree
+bit for bit. [§1a](docs/results.md#1a-how-firm-are-those-numbers) has the
+check, together with the bug that made it necessary.
 
 Relative pose error and drift, measured over fixed *distance* intervals rather
 than fixed time, because a platform that hovers accumulates time but not error
 and a time-based figure rewards it for that:
 
 <!-- table:drift -->
-_No results yet.  Run `make experiments`._
+| sequence | distance | VIO RPE over 1 m | VIO drift | VO RPE over 1 m | VO drift |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `MH_01_easy` | 81 m | 0.1430 m | 5.21 %/m | 0.5163 m | 8.09 %/m |
+| `MH_02_easy` | 73 m | 0.0970 m | 2.23 %/m | 0.1491 m | 2.45 %/m |
+| `MH_03_medium` | 130 m | 0.1112 m | 0.59 %/m | 0.2922 m | 1.14 %/m |
+| `MH_04_difficult` | 91 m | 0.1015 m | 2.20 %/m | 1.1300 m | 4.38 %/m |
+| `MH_05_difficult` | 97 m | 0.1161 m | 1.90 %/m | 0.3359 m | 3.52 %/m |
+| `V1_01_easy` | 58 m | 0.1057 m | 0.49 %/m | 0.5149 m | 1.79 %/m |
+| `V1_02_medium` | 76 m | 0.0954 m | 0.29 %/m | 0.5861 m | 1.73 %/m |
+| `V1_03_difficult` | 78 m | 0.1169 m | 0.30 %/m | 0.7880 m | 1.91 %/m |
 <!-- /table:drift -->
 
-**Runtime, and the thing this does not do.**
+**Runtime and the thing this does not do.**
 
 <!-- table:timing -->
-_No uncontended timing runs yet.  `make experiments` runs in parallel, which inflates milliseconds per frame; run `make timing` for the honest figures._
+| sequence | tracking | preintegration | triangulation | window solve | marginalisation | total | effective |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `MH_01_easy` | 6.7 | 1.6 | 3.0 | 67.1 | 0.4 | **79 ms** | 12.7 Hz |
+| `V1_01_easy` | 7.6 | 1.6 | 3.2 | 85.8 | 0.6 | **99 ms** | 10.1 Hz |
+| `V1_02_medium` | 7.9 | 1.7 | 6.0 | 113.4 | 0.9 | **130 ms** | 7.7 Hz |
+| **mean** | 7.4 | 1.6 | 4.1 | 88.8 | 0.6 | **103 ms** | 10.2 Hz |
+
+All figures are milliseconds per *frame* on one core, from runs that had the machine to themselves; the per-keyframe stages are scaled by the keyframe rate.
 <!-- /table:timing -->
 
 This is not a real-time system and nothing here claims it is. A 20 Hz camera
 allows 50 ms per frame; the front end fits and the window solve does not. The
 constant factor is Python rather than the algorithm: the window is bounded, the
-solve is Schur-complemented, and the same graph in C++ would sit inside budget.
-For context, and not as a claim about this implementation, VINS-Mono and
+solve is Schur-complemented and the same graph in C++ would sit inside budget.
+For context, though not as a claim about this implementation, VINS-Mono and
 ORB-SLAM3 report ATE in the 0.04 to 0.20 m range on these sequences, in C++, in
 real time, with stereo available.
 
 ---
 
-## What is written out, and what is not
+## What is written out and what is not
 
 The honest half of a "from scratch" claim is the second list.
 
@@ -142,7 +172,7 @@ vocabulary tree, binary k-means, TF-IDF and the inverted index; the pose graph;
 the camera-IMU calibration; ATE, RPE and Umeyama; the dataset loaders; the
 simulator and renderer.
 
-**Borrowed, and why.**
+**Borrowed and why.**
 
 | Component | Library | Why not written out |
 | --- | --- | --- |
@@ -175,14 +205,14 @@ about 1 per cent and 0.2 degrees. [§4](docs/results.md#4-accelerometer-bias-at-
 accelerometer readings across an interval is second-order accurate, so it
 should have been strictly better. It was worse, because the two accelerations
 have to be rotated into the reference frame by the attitude at *their own* end
-of the interval before averaging, and the first version rotated both by the
+of the interval before averaging and the first version rotated both by the
 start-of-interval attitude. Fixed, midpoint is 44 times more accurate over a
 50 ms block and 839 times over a one-second block, for the same cost.
 [§5](docs/results.md#5-imu-integration-euler-against-midpoint)
 
 **A robust kernel on loop edges suppressed the loop closure.** A Cauchy kernel
 seemed obviously right for a constraint that might be a false positive. It is
-obviously wrong, and the reason is worth stating: a loop edge's residual is
+obviously wrong and the reason is worth stating: a loop edge's residual is
 large *by construction*, because that residual is the accumulated drift the
 edge exists to remove. Measured on a 60-node loop with 0.37 m of drift, the
 Cauchy weight came out at 0.055 and the correction was four hundredths of a
@@ -190,7 +220,7 @@ millimetre. A kernel cannot distinguish "large because the trajectory drifted"
 from "large because the loop is wrong"; only geometric verification can, and
 that is where the defence belongs.
 
-**The synthetic renderer drew dots, and the tracker mismatched every one of
+**The synthetic renderer drew dots and the tracker mismatched every one of
 them.** Two-pixel Gaussian blobs vanish at the top of a four-level pyramid, so
 KLT's coarse-to-fine search started from noise and converged onto a
 *neighbouring* blob, consistently, while reporting a healthy status flag. The
@@ -200,9 +230,9 @@ across the whole image.
 **Six flat walls are degenerate for the fundamental matrix.** With the scene
 built from exactly planar surfaces, the front end's two-view check was
 discarding 34 tracks per frame on synthetic images against 0.2 per frame on
-EuRoC, and mean track length collapsed from thirty frames to five. RANSAC does
+EuRoC and mean track length collapsed from thirty frames to five. RANSAC does
 not fail loudly on a degenerate configuration; it returns a confident,
-arbitrary model. The scene gained depth structure, and the tracker now rejects
+arbitrary model. The scene gained depth structure and the tracker now rejects
 a two-view *model* that discards most of its input rather than believing it.
 
 **The excitation gate measured rotation, not translation.** Scale is only
@@ -220,7 +250,7 @@ are marginalised now, which is an approximation and is named as one.
 [§7](docs/results.md#7-back-end)
 
 **The gyroscope-predicted tracking guess buys nothing at 20 Hz.** It more than
-halves the initial guess error, from 11.6 px to 5.3 px on V1_02, and gains
+halves the initial guess error, from 11.6 px to 5.3 px on V1_02 and gains
 exactly zero tracked features, because the displacement is already inside a
 21x21 window at the top of a four-level pyramid. Decimating the stream shows
 where it starts to pay: +2.2 per cent of tracked features at 10 Hz, +5.7 at
@@ -230,7 +260,7 @@ than of the idea.
 [§6](docs/results.md#6-gyroscope-predicted-feature-tracking)
 
 **Descriptors computed where a landmark projects match nothing.** Loop
-verification needs descriptors that have a 3-D position, and the first version
+verification needs descriptors that have a 3-D position and the first version
 computed them at the pixel each tracked landmark landed on. Those are arbitrary
 patches, not the corners a detector would choose, so they never matched the
 query frame's detections. The map descriptors are now a *subset of the
@@ -240,7 +270,7 @@ detections*.
 Python randomises string hashing per process, so a set of variable keys
 iterates in a different order every time. The marginalisation ordered the
 columns of its system by iterating such a set; that ordering fixed the
-eigendecomposition, the eigendecomposition fixed the linear prior, and the
+eigendecomposition, the eigendecomposition fixed the linear prior and the
 prior moved the trajectory by a third of its error. Every within-process check
 passed throughout, because within one process the order is stable. The fix is
 one line; finding it took running the same thing twice and refusing to accept
@@ -249,32 +279,41 @@ the difference.
 estimator in two subprocesses with deliberately different `PYTHONHASHSEED`
 values and compares the trajectories bit for bit.
 
-**Reproducible is not the same as insensitive.** With the hash-order bug fixed
-the same commit and seed give the same trajectory bit for bit, but the random
-sampling inside OpenCV's RANSAC still genuinely changes the answer, and its
-generator is global to the process, so anything else drawing from it shifts
-what the estimator sees. So every ATE here is one sample with an error bar,
-`make seed-spread` measures it by varying nothing but the seed, and
-[§1a](docs/results.md#1a-how-firm-are-those-numbers) reports it. A tuning change
-that moves ATE by less than that spread has not been shown to do anything.
+**The obvious culprit was innocent, which only a second measurement showed.**
+The seed had been made configurable on the theory that OpenCV's RANSAC was the
+remaining source of variation, so `make seed-spread` was written to publish the
+resulting error bar. There is no error bar. Five seeds on each of two sequences
+return an ATE identical to every digit printed, standard deviation 0.0000,
+because `cv2.setRNGSeed` does not change what `findFundamentalMat` or
+`findEssentialMat` return under OpenCV 5; those routines sample through USAC
+rather than through the global generator. Attaching the loop-closure detector,
+which runs its own PnP under RANSAC in the same process, likewise leaves the
+trajectory untouched: MH_05 scores 1.1249 m with the detector and without it,
+V1_02 scores 0.3365 m either way. The 31% spread that motivated the exercise
+was the hash-order bug above, attributed to the seed before anyone measured
+the seed. The sweep stays in the repository because its conclusion is a fact
+about one version of one library rather than a guarantee.
 
-**One sequence never initialised, and got quadratically slower while not
+**One sequence never initialised and got quadratically slower while not
 doing it.** On EuRoC MH_03 the bootstrap map went stale, every new keyframe
-failed to locate against it and was dropped, and because a dropped keyframe
+failed to locate against it and was dropped and because a dropped keyframe
 leaves the previous one in place, the IMU block for the *next* keyframe spanned
 an ever longer interval. By frame 300 it was integrating fifteen seconds of
 inertial data per keyframe and the sequence had not finished in half an hour.
 Two fixes: the bootstrap now throws the map away and starts again from the
-present after six consecutive failures, and a keyframe gap beyond two seconds
+present after six consecutive failures and a keyframe gap beyond two seconds
 is treated as a broken link rather than something to integrate across. MH_03
-now restarts once, initialises, and runs at the same cost per frame as
+now restarts once, initialises and runs at the same cost per frame as
 everything else.
 
 **And one that could not be fixed:** ORB descriptors do not match across the
 synthetic images at all, 25 ratio-test matches against EuRoC's 386. The cause
 is structural, since the patches never warp with viewpoint and their overlaps
-change, so no parameter adjustment moves it. Loop closure is therefore
-evaluated on EuRoC and continuous integration tests only the plumbing. That is
+change, so no parameter adjustment moves it. The sharpest way to put it: the
+generated circuit CI runs closes exactly once per lap and offers 17 genuine
+revisit episodes, of which the detector converts **none**, against 6 of 21 on
+MH_05. Loop closure is therefore evaluated on EuRoC; the synthetic run
+tests that the pipeline holds together rather than that it works. That is
 written down in [docs/limitations.md](docs/limitations.md) rather than left for
 a reader to discover.
 
@@ -283,12 +322,12 @@ a reader to discover.
 ## How it works
 
 * **[docs/design.md](docs/design.md)**: architecture, the conventions fixed
-  once and used everywhere, the three pieces that are actually hard, and the
+  once and used everywhere, the three pieces that are actually hard and the
   table of decisions that came from measurement.
 * **[docs/results.md](docs/results.md)**: every table, both alignments, the
   ablations, loop closure and calibration.
 * **[docs/calibration.md](docs/calibration.md)**: what is observable, what is
-  not, and why the extrinsic translation is deliberately not estimated from
+  not and why the extrinsic translation is deliberately not estimated from
   real sequences.
 * **[docs/limitations.md](docs/limitations.md)**: everything the system does
   not do, which is a longer list than the results.
@@ -301,7 +340,10 @@ and what the trap in it is.
 ## Loop closure
 
 <!-- table:loop -->
-_No loop-closure runs yet.  Run `make loop`._
+| sequence | revisit episodes | closures | correct | precision | episode recall | ATE before | ATE after |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `MH_05_difficult` | 21 | 10 | 10 | 1.00 | 0.29 | 1.125 m | **0.404 m** (-64%) |
+| `V1_02_medium` | 317 | 8 | 8 | 1.00 | 0.12 | 0.336 m | **0.267 m** (-21%) |
 <!-- /table:loop -->
 
 The vocabulary is trained on **Machine Hall 01 and 02 only** and evaluated
@@ -316,7 +358,10 @@ closing the loops helped, are reported separately because they are separate.
 ## Camera-IMU calibration
 
 <!-- table:calibration -->
-_No calibration runs yet.  Run `make calibrate`._
+| sequence | rotation error | Procrustes residual | offset injected | offset recovered | error | correlation |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `MH_03_medium` | 1.115 deg | 1.7e-02 rad | +18.7 ms | +15.7 ms | -3.05 ms | 0.971 |
+| `V1_01_easy` | 1.772 deg | 2.4e-02 rad | +0.0 ms | +2.7 ms | +2.66 ms | 0.928 |
 <!-- /table:calibration -->
 
 The rotation is recovered from rotation alone and compared against EuRoC's
@@ -336,9 +381,9 @@ The tests are the reason to believe the back end. Every analytic Jacobian is
 checked against a central finite difference of its own residual, at randomised
 linearisation points. The preintegration is checked against an analytic
 trajectory, so the reference has no integration error of its own to hide
-behind, and its covariance against a Monte Carlo. The vectorised factor group
+behind and its covariance against a Monte Carlo. The vectorised factor group
 is checked against the scalar factors it replaces. The trajectory metrics are
-checked against `evo`: 26 of the 30 comparisons agree to 1.8e-15 m, and the
+checked against `evo`: 28 of the 32 comparisons agree to 1.8e-15 m and the
 four that do not are all one sequence where a single estimate sits exactly on
 the association boundary, which `make evo-check` reports as a tie-break rather
 than an error. The dataset loader is checked by writing a simulated

@@ -5,7 +5,7 @@ TUM format is one line per pose::
     timestamp tx ty tz qx qy qz qw
 
 Chosen over the EuRoC CSV layout for the *outputs* because it is what ``evo``
-and every other trajectory tool reads without a converter, and because a
+and every other trajectory tool reads without a converter and because a
 results file that a reader can drop straight into their own evaluation is worth
 more than one in the dataset's own dialect.
 

@@ -1,7 +1,7 @@
 """A vocabulary tree over binary descriptors, built by hierarchical k-means.
 
 This is the DBoW2 construction, written out.  DBoW2 itself is C++ and there is
-no maintained Python binding, but more to the point the algorithm is short and
+no maintained Python binding but more to the point the algorithm is short and
 the interesting parts, how a binary centroid is defined, how the tree is
 descended, how the inverted index is weighted, are exactly the parts worth
 being able to answer questions about.
@@ -15,7 +15,7 @@ minimising total Hamming distance, the binary analogue of the median rather
 than of the mean.
 
 **The tree.**  Descriptors are clustered into ``branching`` groups, each group
-is clustered again, and so on for ``depth`` levels.  The leaves are the words.
+is clustered again and so on for ``depth`` levels.  The leaves are the words.
 Assigning a descriptor to a word is then ``branching * depth`` comparisons
 instead of comparing against every word, which is what makes a vocabulary of
 tens of thousands of words queryable at frame rate.
@@ -63,7 +63,7 @@ def _kmeans_binary(data: np.ndarray, k: int, rng, iterations: int = 12):
     Seeded k-means++ style: the first centre is random, each subsequent one is
     the descriptor furthest from those already chosen.  Plain random seeding
     routinely produced clusters that were empty on the first assignment, which
-    then had to be resurrected somehow, and the resurrection rule is exactly
+    then had to be resurrected somehow and the resurrection rule is exactly
     the sort of arbitrary detail that makes a vocabulary irreproducible.
     """
     n = len(data)
@@ -178,7 +178,7 @@ class Vocabulary:
         """TF-IDF bag-of-words vector, L1-normalised, as ``{word: weight}``.
 
         L1 rather than L2 because the similarity score below is DBoW2's L1
-        score, and the two have to agree for the score to lie in ``[0, 1]``.
+        score and the two have to agree for the score to lie in ``[0, 1]``.
         """
         if len(descriptors) == 0:
             return {}
