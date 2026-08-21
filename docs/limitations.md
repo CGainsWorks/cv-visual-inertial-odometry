@@ -159,8 +159,11 @@ reprojection model above is wrong in a motion-dependent way.
 
 ## The headline numbers are single runs, which is enough
 
-Given a commit the estimator is bit-for-bit reproducible and a test runs it in
-two processes with different hash seeds to keep it so.  It is also insensitive
+Given a commit and a machine the estimator is bit-for-bit reproducible; a
+test runs it in two processes with different hash seeds to keep it so.  Across
+machines it is not: the same generated sequence scores 0.2573 m here and
+0.2391 m on the continuous integration runner, which has different BLAS and
+OpenCV binaries underneath.  It is also insensitive
 to the one input that looked stochastic.  `make seed-spread` varies nothing but
 the seed OpenCV's generator starts from and across five seeds on each of two
 sequences the ATE is identical to every digit printed.  `cv2.setRNGSeed` does

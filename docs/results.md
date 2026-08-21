@@ -52,10 +52,18 @@ monocular Python implementation written from the equations.
 
 ## 1a. How firm are those numbers?
 
-Given a commit, this system is now bit-for-bit reproducible, and
+Given a commit and a machine, this system is now bit-for-bit reproducible, and
 [tests/test_reproducibility.py](../tests/test_reproducibility.py) runs it in two
 processes with different hash seeds to keep it that way.  It did not start out
 that way; the story is in the README under *What went wrong*.
+
+The qualifier *and a machine* is meant literally.  Reproducibility here is over
+repeated runs of one build, not across builds: the generated loop sequence that
+continuous integration runs scores 0.2573 m locally against 0.2391 m on the
+GitHub runner, from the same commit, because the two have different BLAS and
+OpenCV binaries underneath.  Every number in this document therefore names the
+machine it came from; none of them should be compared digit for digit with a
+run somewhere else.
 
 Reproducibility on its own would not settle whether these numbers are firm.
 A system can be bit-for-bit repeatable and still swing wildly with a different
