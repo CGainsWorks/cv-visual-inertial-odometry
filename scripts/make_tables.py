@@ -22,6 +22,7 @@ import argparse
 import json
 import re
 import sys
+import textwrap
 from pathlib import Path
 
 import numpy as np
@@ -105,13 +106,15 @@ def table_headline(runs: dict) -> str:
     else:
         speed = (".  Runtime is measured separately by `make timing`, because "
                  "these runs shared the machine.")
-    return LINE_BREAK.join([
+    sentence = (
         f"Across the {len(rows)} EuRoC sequences the visual-inertial "
-        "configuration reaches a",
-        f"mean absolute trajectory error of **{ate:.3f} m** under rigid "
-        "alignment and",
-        f"recovers metric scale to within **{scale:.1f} per cent**{speed}",
-    ])
+        f"configuration reaches a mean absolute trajectory error of "
+        f"**{ate:.3f} m** under rigid alignment and recovers metric scale to "
+        f"within **{scale:.1f} per cent**{speed}"
+    )
+    # Wrapped so the generated block reads like the prose around it in a diff,
+    # rather than as one very long line.
+    return LINE_BREAK.join(textwrap.wrap(sentence, width=78))
 
 
 def table_euroc(runs: dict) -> str:

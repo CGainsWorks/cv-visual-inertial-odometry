@@ -80,6 +80,9 @@ jobs:
       - name: The same seed gives the same trajectory
         run: python -m pytest tests/test_pipeline.py -q -k ransac
 
+      - name: ...in a different process, with a different hash seed
+        run: python -m pytest tests/test_reproducibility.py -q
+
       - name: Vocabulary trains and detects on synthetic imagery
         run: |
           python scripts/build_vocabulary.py --sim --depth 3 \

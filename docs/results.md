@@ -26,17 +26,7 @@ poses begin at initialisation, which on the Machine Hall sequences is a few
 seconds in; see [limitations.md](limitations.md).
 
 <!-- table:euroc -->
-| sequence | length | VIO ATE (m) | VIO scale err | VIO rot (deg) | VO ATE, sim3 (m) | VO scale |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `MH_01_easy` | 81 m | **0.971** | 4.9% | 13.99 | 2.316 | 3.60x |
-| `MH_02_easy` | 73 m | **0.538** | 3.5% | 7.99 | 0.670 | 0.48x |
-| `MH_03_medium` | 131 m | n/a | n/a | n/a | 3.578 | 7.64x |
-| `MH_04_difficult` | 91 m | **1.391** | 4.7% | 11.80 | 6.792 | 2.72x |
-| `MH_05_difficult` | 97 m | **1.118** | 1.4% | 20.13 | 2.372 | 0.86x |
-| `V1_01_easy` | 58 m | **0.271** | 3.7% | 10.13 | 1.109 | 2.37x |
-| `V1_02_medium` | 76 m | **0.301** | 6.8% | 11.29 | 1.135 | 0.23x |
-| `V1_03_difficult` | 78 m | **0.439** | 7.6% | 11.42 | 1.519 | 2.00x |
-| **mean** | | **0.718** | 4.7% | 12.39 | 2.436 | |
+_No results yet.  Run `make experiments`._
 <!-- /table:euroc -->
 
 The visual-only column is the point of the comparison.  Its trajectory *shape*
@@ -78,16 +68,7 @@ because a platform that hovers accumulates time but not error and a time-based
 figure rewards it for that.
 
 <!-- table:drift -->
-| sequence | distance | VIO RPE over 1 m | VIO drift | VO RPE over 1 m | VO drift |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `MH_01_easy` | 81 m | 0.1423 m | 4.21 %/m | 0.5163 m | 8.09 %/m |
-| `MH_02_easy` | 73 m | 0.0973 m | 1.51 %/m | 0.1491 m | 2.45 %/m |
-| `MH_03_medium` | 131 m | n/a | n/a | 0.9500 m | 2.42 %/m |
-| `MH_04_difficult` | 91 m | 0.1002 m | 2.28 %/m | 1.1300 m | 4.38 %/m |
-| `MH_05_difficult` | 97 m | 0.1140 m | 2.41 %/m | 0.3359 m | 3.52 %/m |
-| `V1_01_easy` | 58 m | 0.1067 m | 0.70 %/m | 0.5149 m | 1.79 %/m |
-| `V1_02_medium` | 76 m | 0.0917 m | 0.29 %/m | 0.5861 m | 1.73 %/m |
-| `V1_03_difficult` | 78 m | 0.1167 m | 0.29 %/m | 0.7880 m | 1.91 %/m |
+_No results yet.  Run `make experiments`._
 <!-- /table:drift -->
 
 Drift is the final absolute error divided by the distance travelled.  The mean
@@ -171,7 +152,13 @@ Integrating the gyroscope across a frame interval predicts where each feature
 will land, which ought to help KLT.
 
 <!-- table:frontend -->
-_No ablation yet.  Run `make ablate`._
+| stride | effective rate | tracked, no gyro | tracked, with gyro | gain | guess error, no gyro | with gyro |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 20.0 Hz | 151.2 | 151.3 | +0.0% | 11.57 px | 5.33 px |
+| 2 | 10.0 Hz | 115.2 | 117.7 | +2.2% | 22.44 px | 10.10 px |
+| 3 | 6.7 Hz | 93.7 | 99.1 | +5.7% | 31.68 px | 14.22 px |
+| 5 | 4.0 Hz | 70.7 | 78.1 | +10.4% | 49.10 px | 22.62 px |
+| 8 | 2.5 Hz | 53.3 | 59.8 | +12.2% | 38.27 px | 31.21 px |
 <!-- /table:frontend -->
 
 It halves the initial guess error and gains **no features at all** at EuRoC's
@@ -182,7 +169,19 @@ conclusion is a property of this dataset's frame rate rather than of the idea.
 ## 7. Back end
 
 <!-- table:backend -->
-_No ablation yet.  Run `make ablate`._
+Vectorised reprojection group, 1500 observations in the window:
+
+| path | per linearisation | agreement |
+| --- | ---: | ---: |
+| scalar factors | 74.5 ms | reference |
+| vectorised group | **4.6 ms** (16x) | 6e-10 in the Jacobian |
+
+Marginalising the departing keyframe's inertial states, or not:
+
+| marginalise | ATE (m) | rotation (deg) | scale error | per keyframe |
+| --- | ---: | ---: | ---: | ---: |
+| yes | 0.3190 | 2.57 | 3.48% | 245 ms |
+| no | 0.1935 | 2.28 | 2.86% | 232 ms |
 <!-- /table:backend -->
 
 The vectorised group and the scalar factors are the same mathematics; a test
@@ -193,7 +192,12 @@ adjustment slow, not the arithmetic.
 ## 8. Sliding-window size
 
 <!-- table:window -->
-_No ablation yet.  Run `make ablate`._
+| window | ATE (m) | scale error | per frame |
+| ---: | ---: | ---: | ---: |
+| 5 keyframes | 0.6343 | 21.93% | 72 ms |
+| 8 keyframes | 0.4626 | 4.64% | 88 ms |
+| 10 keyframes | 0.3190 | 3.48% | 111 ms |
+| 15 keyframes | 0.2986 | 1.44% | 128 ms |
 <!-- /table:window -->
 
 ## 9. Loop closure
@@ -204,9 +208,7 @@ elsewhere; the training set is recorded inside the vocabulary file.  A
 of each other, facing within 45 degrees, at least 30 keyframes apart.
 
 <!-- table:loop -->
-| sequence | revisit episodes | closures | correct | precision | episode recall | ATE before | ATE after |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `V1_02_medium` | n/a | 7 | 7 | 1.00 | 0.01 | 0.306 m | **0.239 m** (-22%) |
+_No loop-closure runs yet.  Run `make loop`._
 <!-- /table:loop -->
 
 Precision is over emitted closures.  Recall is over revisit *episodes*, meaning
@@ -230,9 +232,7 @@ recovered from a deliberately injected one, so a routine that always returns
 zero fails rather than passes.
 
 <!-- table:calibration -->
-| sequence | rotation error | Procrustes residual | offset injected | offset recovered | error | correlation |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `V1_01_easy` | 1.857 deg | 2.1e-02 rad | +0.0 ms | -7.0 ms | -6.98 ms | 0.627 |
+_No calibration runs yet.  Run `make calibrate`._
 <!-- /table:calibration -->
 
 The extrinsic *translation* is not estimated from real sequences.  It is only

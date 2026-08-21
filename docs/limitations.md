@@ -124,10 +124,21 @@ preintegration propagates the state between keyframes exactly.
 
 Verified loops correct the *trajectory* through a pose graph.  They do not
 merge landmarks, do not re-triangulate across the loop, and do not feed
-anything back into the sliding window.  The map is a by-product, not a
-maintained global structure.  There is no relocalisation after tracking loss:
-if the front end fails, the estimator reports the failure and continues from
-whatever it can, rather than recovering its old frame.
+anything back into the sliding window.
+
+The sparse map written beside each trajectory is a by-product of that, not a
+maintained global structure.  Each landmark's position is recorded as it leaves
+the sliding window and is never revisited, so a loop closure that moves the
+trajectory by twenty centimetres leaves the cloud where it was, and the two
+disagree by that much after the closure.  Fixing it means either keeping every
+landmark in the optimisation, which is what makes a full SLAM back end
+expensive, or rigidly transforming each landmark with its anchoring keyframe's
+correction, which is cheap and is not implemented.  The map is written for
+inspection rather than for use.
+
+There is no relocalisation after tracking loss either: if the front end fails,
+the estimator restarts its bootstrap from the present rather than recovering
+its old frame, so the trajectory continues in a new one.
 
 ## No IMU intrinsic calibration
 

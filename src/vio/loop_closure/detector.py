@@ -198,7 +198,10 @@ class LoopDetector:
             reference = cfg.absolute_score / max(cfg.relative_score, 1e-9)
 
         out = []
-        for other in touched:
+        # Sorted so the candidate order does not depend on Python's per-process
+        # string hash randomisation; see vio.backend.marginalisation for what
+        # that costs when it leaks into the numerics.
+        for other in sorted(touched):
             if abs(other - kf_id) < cfg.min_gap:
                 continue
             s = self.vocab.score(query.bow, self.records[other].bow)

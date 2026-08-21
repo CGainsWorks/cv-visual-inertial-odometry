@@ -23,9 +23,7 @@ the true scale, score the visual-inertial result rigidly, and put the two side
 by side.
 
 <!-- table:headline -->
-Across the 7 EuRoC sequences the visual-inertial configuration reaches a
-mean absolute trajectory error of **0.718 m** under rigid alignment and
-recovers metric scale to within **4.7 per cent**.  Runtime is measured separately by `make timing`, because these runs shared the machine.
+_No results yet.  Run `make experiments`, then `make tables`._
 <!-- /table:headline -->
 
 ### What it looks like
@@ -96,17 +94,7 @@ Full tables, both alignments, every sequence: **[docs/results.md](docs/results.m
 Monocular, `cam0` only, one pass per sequence, no per-sequence tuning.
 
 <!-- table:euroc -->
-| sequence | length | VIO ATE (m) | VIO scale err | VIO rot (deg) | VO ATE, sim3 (m) | VO scale |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `MH_01_easy` | 81 m | **0.971** | 4.9% | 13.99 | 2.316 | 3.60x |
-| `MH_02_easy` | 73 m | **0.538** | 3.5% | 7.99 | 0.670 | 0.48x |
-| `MH_03_medium` | 131 m | n/a | n/a | n/a | 3.578 | 7.64x |
-| `MH_04_difficult` | 91 m | **1.391** | 4.7% | 11.80 | 6.792 | 2.72x |
-| `MH_05_difficult` | 97 m | **1.118** | 1.4% | 20.13 | 2.372 | 0.86x |
-| `V1_01_easy` | 58 m | **0.271** | 3.7% | 10.13 | 1.109 | 2.37x |
-| `V1_02_medium` | 76 m | **0.301** | 6.8% | 11.29 | 1.135 | 0.23x |
-| `V1_03_difficult` | 78 m | **0.439** | 7.6% | 11.42 | 1.519 | 2.00x |
-| **mean** | | **0.718** | 4.7% | 12.39 | 2.436 | |
+_No results yet.  Run `make experiments`._
 <!-- /table:euroc -->
 
 Every ATE above is a single run, and its error bar is measured rather than
@@ -120,16 +108,7 @@ than fixed time, because a platform that hovers accumulates time but not error
 and a time-based figure rewards it for that:
 
 <!-- table:drift -->
-| sequence | distance | VIO RPE over 1 m | VIO drift | VO RPE over 1 m | VO drift |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `MH_01_easy` | 81 m | 0.1423 m | 4.21 %/m | 0.5163 m | 8.09 %/m |
-| `MH_02_easy` | 73 m | 0.0973 m | 1.51 %/m | 0.1491 m | 2.45 %/m |
-| `MH_03_medium` | 131 m | n/a | n/a | 0.9500 m | 2.42 %/m |
-| `MH_04_difficult` | 91 m | 0.1002 m | 2.28 %/m | 1.1300 m | 4.38 %/m |
-| `MH_05_difficult` | 97 m | 0.1140 m | 2.41 %/m | 0.3359 m | 3.52 %/m |
-| `V1_01_easy` | 58 m | 0.1067 m | 0.70 %/m | 0.5149 m | 1.79 %/m |
-| `V1_02_medium` | 76 m | 0.0917 m | 0.29 %/m | 0.5861 m | 1.73 %/m |
-| `V1_03_difficult` | 78 m | 0.1167 m | 0.29 %/m | 0.7880 m | 1.91 %/m |
+_No results yet.  Run `make experiments`._
 <!-- /table:drift -->
 
 **Runtime, and the thing this does not do.**
@@ -257,6 +236,19 @@ patches, not the corners a detector would choose, so they never matched the
 query frame's detections. The map descriptors are now a *subset of the
 detections*.
 
+**Two runs of the same commit with the same seed gave 0.257 m and 0.362 m.**
+Python randomises string hashing per process, so a set of variable keys
+iterates in a different order every time. The marginalisation ordered the
+columns of its system by iterating such a set; that ordering fixed the
+eigendecomposition, the eigendecomposition fixed the linear prior, and the
+prior moved the trajectory by a third of its error. Every within-process check
+passed throughout, because within one process the order is stable. The fix is
+one line; finding it took running the same thing twice and refusing to accept
+the difference.
+[tests/test_reproducibility.py](tests/test_reproducibility.py) now runs the
+estimator in two subprocesses with deliberately different `PYTHONHASHSEED`
+values and compares the trajectories bit for bit.
+
 **The estimator is deterministic, and its answer still moves.** Everything is
 deterministic except the random sampling inside OpenCV's RANSAC, which the
 front end uses for its two-view check and for PnP, and that generator is global
@@ -310,9 +302,7 @@ and what the trap in it is.
 ## Loop closure
 
 <!-- table:loop -->
-| sequence | revisit episodes | closures | correct | precision | episode recall | ATE before | ATE after |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `V1_02_medium` | n/a | 7 | 7 | 1.00 | 0.01 | 0.306 m | **0.239 m** (-22%) |
+_No loop-closure runs yet.  Run `make loop`._
 <!-- /table:loop -->
 
 The vocabulary is trained on **Machine Hall 01 and 02 only** and evaluated
@@ -327,9 +317,7 @@ closing the loops helped, are reported separately because they are separate.
 ## Camera-IMU calibration
 
 <!-- table:calibration -->
-| sequence | rotation error | Procrustes residual | offset injected | offset recovered | error | correlation |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `V1_01_easy` | 1.857 deg | 2.1e-02 rad | +0.0 ms | -7.0 ms | -6.98 ms | 0.627 |
+_No calibration runs yet.  Run `make calibrate`._
 <!-- /table:calibration -->
 
 The rotation is recovered from rotation alone and compared against EuRoC's

@@ -59,7 +59,15 @@ def marginalise(graph, values: Values, drop_keys, tolerance: float = RANK_TOLERA
     nothing that survives, which happens for a keyframe whose landmarks all
     died with it.
     """
-    drop = set(drop_keys)
+    # Order matters and is preserved deliberately.  ``drop_keys`` fixes the
+    # column ordering of the system below, that ordering fixes the
+    # eigendecomposition, and the eigendecomposition fixes the prior down to
+    # the last bit.  Iterating a *set* of these keys instead makes the ordering
+    # depend on Python's per-process string hash randomisation, which is how
+    # two runs of the same commit with the same seed came out 0.257 and 0.362
+    # on EuRoC V1_01.  Reproducibility is not something to leave to a hash.
+    ordered_drop = list(dict.fromkeys(drop_keys))
+    drop = set(ordered_drop)
     absorbed = [f for f in graph.factors if drop.intersection(_keys_of(f))]
     if not absorbed:
         return None, [], []
@@ -74,7 +82,9 @@ def marginalise(graph, values: Values, drop_keys, tolerance: float = RANK_TOLERA
 
     # Build the system over exactly the absorbed factors, ordering keep first.
     sub = type(graph)(list(absorbed))
-    ordered = keep + [k for k in drop if any(k in _keys_of(f) for f in absorbed)]
+    ordered = keep + [
+        k for k in ordered_drop if any(k in _keys_of(f) for f in absorbed)
+    ]
     system = _ordered_system(sub, values, ordered)
     if system is None:
         return None, absorbed, []
